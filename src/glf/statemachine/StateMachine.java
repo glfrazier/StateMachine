@@ -7,6 +7,16 @@ import java.util.Set;
 
 public class StateMachine {
 
+	/**
+	 * If this Event is used in a transition from a given state S, then when an
+	 * Event is received while the StateMachine is in S, and there are no
+	 * transitions whose Event matches the input, then the WILDCARD transition
+	 * is invoked. If one thinks of the transitions from a state as being
+	 * implemented by a switch statement, the WILDCARD event is the "default:"
+	 * block.
+	 */
+	public static final Event WILDCARD_EVENT = new EventImpl("The 'Wildcard' Event");
+
 	private String name;
 
 	private Set<State> states;
@@ -19,6 +29,18 @@ public class StateMachine {
 
 	private boolean verbose;
 
+	/**
+	 * Construct a StateMachine that has the specified name, transitions, and
+	 * initial state.
+	 * 
+	 * @param name
+	 *            the name of the state machine
+	 * @param transitions
+	 *            the transitions that compose the state machine. Note that the
+	 *            set of states is infered from the transitions.
+	 * @param startState
+	 *            the initial state of the machine
+	 */
 	public StateMachine(String name, Set<Transition> transitions, State startState) {
 		this(name, startState);
 		for (Transition t : transitions) {
@@ -26,6 +48,16 @@ public class StateMachine {
 		}
 	}
 
+	/**
+	 * Construct a StateMachine with a name and an initial state. Transitions
+	 * must be added.
+	 * 
+	 * @see #addTransition(Transition)
+	 * @param name
+	 *            the name of the state machine
+	 * @param startState
+	 *            the initial state of the machine
+	 */
 	public StateMachine(String name, State startState) {
 		this.name = name;
 		states = new HashSet<State>();
@@ -33,6 +65,13 @@ public class StateMachine {
 		stateTransitionMap = new HashMap<State, Map<Event, Transition>>();
 	}
 
+	/**
+	 * Add transitions to the state machine. This method can be invoked at any
+	 * point, even after one has begun to execute the state machine.
+	 * 
+	 * @param t
+	 *            a transition from one state to another
+	 */
 	public void addTransition(Transition t) {
 		State fromState = t.getFromState();
 		states.add(fromState);
@@ -55,6 +94,13 @@ public class StateMachine {
 		transitionMap.put(t.getInput(), t);
 	}
 
+	/**
+	 * Causes the StateMachine to enter its initial state. Note that one can
+	 * receive inputs without invoking <code>begin()</code>. If you do, the
+	 * startState is entered before the input is processed.
+	 * 
+	 * @see #receive(Event)
+	 */
 	public void begin() {
 		enterState(startState);
 	}
@@ -85,6 +131,16 @@ public class StateMachine {
 		enterState(t.getToState());
 	}
 
+	/**
+	 * Non-null transitions can only be processed when an input Event is
+	 * received.
+	 * 
+	 * @param input
+	 *            the Event that is the next input to the StateMachine. If the
+	 *            input triggers a Transition, the Transition's action is
+	 *            invoked and the StateMachine will enter a new state, which may
+	 *            be the same as the previous state.
+	 */
 	public void receive(Event input) {
 		if (currentState == null) {
 			if (verbose) {
@@ -104,6 +160,12 @@ public class StateMachine {
 			return;
 		}
 		Transition t = transitionMap.get(input);
+		if (t == null) {
+			t = transitionMap.get(WILDCARD_EVENT);
+			if (verbose && t != null) {
+				System.out.println(currentState + " is invoking the WILDCARD transition for input " + input);
+			}
+		}
 		if (t == null) {
 			// There is no transition defined for the input in the curren state
 			if (verbose) {

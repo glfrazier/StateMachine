@@ -8,7 +8,7 @@ Note that it is possible to have a state that transitions without an input--<nul
 valid input.
 
 * The states are instances of the State class.
-* The inputs to the State Machine are (subclasses of) java.util.EventObject.
+* The inputs to the State Machine are implementations of StateMachine.Event, a tagging class. There is also an implementation, EventImpl, that takes a String name as an argument to its constructor and uses the name for hashCode and equals.
 * The outputs are invocations of the ```act(EventObject)``` method on an object
 that implements the StateMachine.Action interface.
 
@@ -24,3 +24,5 @@ State1:null => OUTPUT_B,State2
 ```
 then when the state machine's current state is set to `State1`, then `OUTPUT_B` is immediately invoked
 and the state machine immediately transitions to `State2`.
+
+There is a simple example of building and running a StateMachine in the test/ folder.

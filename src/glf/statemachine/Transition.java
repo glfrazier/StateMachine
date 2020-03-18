@@ -72,5 +72,10 @@ public class Transition {
 	public Transition getUpdatedTransition(Event input) {
 		return new Transition(this.fromState, input, this.action, this.toState);
 	}
+	
+	@Override
+	public String toString() {
+		return fromState + " => " + toState;
+	}
 
 }
