@@ -1,6 +1,6 @@
 # StateMachine
 
-A State Machine (Mealy) builder, with associated DSL to define the state machine.
+A State Machine (Mealy) builder and execution engine.
 
 A Mealy state machine is one whose outputs depend on the current state and the inputs.
 So, each state transition is a 4-tuple: (current state, input, output, next state).
