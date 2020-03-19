@@ -20,8 +20,12 @@ Thus, when one specifies the transition
 (State1, INPUT_A, OUTPUT_B, State2)
 ```
 One is saying that, when `State1` is the state machine's current state,
-if an Event `input` is received that equals `INPUT_A`, then `OUTPUT_B.act(input)` is
-invoked and the current state is set to `State2`. If the specification is
+if an Event `input` is received that equals `INPUT_A`, then `OUTPUT_B.act(transition)` is
+invoked and the current state is set to `State2`. Note that `act` is passed the entire Transition;
+further, it is the 4-tuple whose input-field is the Event instance that instigated the transition,
+not the instance that was used to define the Transition when building the state machine.
+
+If the specification is
 ```
 (State1, null, OUTPUT_B, State2)
 ```
