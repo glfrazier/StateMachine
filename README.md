@@ -9,7 +9,7 @@ valid input.
 
 * The states are instances of the State class.
 * The inputs to the State Machine are implementations of StateMachine.Event, a tagging class. There is also an implementation, EventImpl, that takes a String name as an argument to its constructor and uses the name for hashCode and equals.
-* The outputs are invocations of the `act(EventObject)` method on an object
+* The outputs are invocations of the `act(Transition)` method on an object
 that implements the StateMachine.Action interface.
 
 Thus, when one specifies the transition
