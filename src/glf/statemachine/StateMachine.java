@@ -59,9 +59,13 @@ public class StateMachine {
 	 *            the initial state of the machine
 	 */
 	public StateMachine(String name, State startState) {
+		this(name);
+		this.startState = startState;
+	}
+
+	public StateMachine(String name) {
 		this.name = name;
 		states = new HashSet<State>();
-		this.startState = startState;
 		stateTransitionMap = new HashMap<State, Map<Event, Transition>>();
 	}
 
