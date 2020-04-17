@@ -1,7 +1,5 @@
 package glf.statemachine;
 
-import java.util.EventObject;
-
 import glf.statemachine.StateMachine.Action;
 import glf.statemachine.StateMachine.Event;
 

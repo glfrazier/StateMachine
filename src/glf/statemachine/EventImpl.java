@@ -1,18 +1,22 @@
 package glf.statemachine;
 
 /**
- * An Event implementation that uses its name and its source to implement hashCode and
- * equals.
+ * An Event implementation that uses its name and its source to implement
+ * hashCode and equals.
  * 
  * @author glfrazier
  *
  */
 public class EventImpl implements StateMachine.Event {
 
-	protected String name;
+	protected final String name;
 
 	public EventImpl(String name) {
 		this.name = name;
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	@Override
@@ -22,11 +26,11 @@ public class EventImpl implements StateMachine.Event {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o == null || !(o instanceof EventImpl)) {
+		if (o == null || !(o instanceof StateMachine.Event)) {
 			return false;
 		}
-		EventImpl e = (EventImpl) o;
-		return name.equals(e.name);
+		StateMachine.Event e = (StateMachine.Event) o;
+		return name.equals(e.getName());
 	}
 
 	@Override

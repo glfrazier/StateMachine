@@ -29,4 +29,9 @@ public class State {
 		}
 		return name.equals(((State)o).name);
 	}
+	
+	@Override
+	public String toString() {
+		return "State " + name;
+	}
 }

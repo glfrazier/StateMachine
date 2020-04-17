@@ -22,9 +22,16 @@ public class StateMachine {
 
 	private Map<State, Map<Event, Transition>> stateTransitionMap;
 
-	private State currentState;
+	protected State currentState;
 
 	private State startState;
+
+	/**
+	 * Count the number of state transitions that have occurred. Transitions to
+	 * self-state, default transitions and wildcard transitions all count. Inputs
+	 * that are ignored do not count.
+	 */
+	private long transitionCount;
 
 	private boolean verbose;
 
@@ -114,6 +121,9 @@ public class StateMachine {
 	}
 
 	private void enterState(State state) {
+		if (verbose) {
+			System.out.println(this + " is entering state " + state);
+		}
 		currentState = state;
 		Map<Event, Transition> transitionMap = stateTransitionMap.get(currentState);
 		if (transitionMap == null) {
@@ -131,11 +141,20 @@ public class StateMachine {
 		performTransition(t);
 	}
 
+	/**
+	 * Perform the transition -- invoke the action associated with the transition
+	 * and then enter the to-state of the transition. The transitionCount is
+	 * incremented <emph>after</emph> the action is invoked and before the state is
+	 * entered.
+	 * 
+	 * @param t
+	 */
 	private void performTransition(Transition t) {
 		Action action = t.getAction();
 		if (action != null) {
 			action.act(t);
 		}
+		transitionCount++;
 		enterState(t.getToState());
 	}
 
@@ -176,6 +195,10 @@ public class StateMachine {
 			// There is no transition defined for the input in the curren state
 			if (verbose) {
 				System.out.println(currentState + " has no transition for input " + input);
+				System.out.println("\tAll transitions:");
+				for(Event key : transitionMap.keySet()) {
+					System.out.println("\t\t" + key);
+				}
 			}
 			return;
 		}
@@ -211,7 +234,10 @@ public class StateMachine {
 	 */
 	public static interface Event {
 
+		public String getName();
+		
 	}
+
 
 	@Override
 	public String toString() {
@@ -222,4 +248,7 @@ public class StateMachine {
 		verbose = v;
 	}
 
+	public long getTransitionCount() {
+		return transitionCount;
+	}
 }
