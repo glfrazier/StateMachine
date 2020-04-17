@@ -4,8 +4,8 @@ package glf.statemachine;
  * An Event implementation that uses its name and its source to implement
  * hashCode and equals.
  * 
- * @author glfrazier
- *
+ * @author Greg Frazier
+ *  *
  */
 public class EventImpl implements StateMachine.Event {
 
