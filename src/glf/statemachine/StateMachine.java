@@ -354,7 +354,7 @@ public class StateMachine {
 
 	@Override
 	public String toString() {
-		return name + "{" + currentState + "}";
+		return name + "{currentState = " + currentState + "}";
 	}
 
 	public void setVerbose(boolean v) {

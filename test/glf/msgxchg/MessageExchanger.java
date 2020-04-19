@@ -84,6 +84,10 @@ public class MessageExchanger {
 		MessageExchanger mx2 = new MessageExchanger("mx2");
 		MXStateMachine machine = new MXStateMachine(mx2, mx1.getPort());
 		machine.setVerbose(verbose);
+
+		// Put each of the MessageExchangers into its own thread
+
+		// The first one responds to three messages and then terminates
 		Thread t1 = new Thread() {
 			public void run() {
 				try {
@@ -95,8 +99,14 @@ public class MessageExchanger {
 			}
 		};
 		t1.start();
+
+		// The second one is under the control of an MXStateMachine
 		Thread t2 = new Thread() {
 
+			/**
+			 * The receive method on the DatagramSocket is not interrupted by the thread's
+			 * interrupt method. So close the socket on an interrupt.
+			 */
 			@Override
 			public void interrupt() {
 				super.interrupt();
@@ -123,6 +133,8 @@ public class MessageExchanger {
 		machine.begin();
 		while (!Thread.interrupted() && machine.getCurrentState() != MXStateMachine.TIMEOUT) {
 			Message m = receive();
+			// When we receive a message, we wrap it in an event and hand it to the state
+			// machine for processing.
 			machine.receive(new EventImpl<Message>(m));
 		}
 	}

@@ -32,6 +32,6 @@ public class State {
 	
 	@Override
 	public String toString() {
-		return "State " + name;
+		return name;
 	}
 }
