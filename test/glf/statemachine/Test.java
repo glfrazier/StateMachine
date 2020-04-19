@@ -50,14 +50,18 @@ public class Test {
 				}
 				StateWithCount dst = (StateWithCount) t.getToState();
 				dst.count = swt.count + 1;
-				System.out.println("Transition: " + (t.getInput() == null ? "<null> " : "") + t);
+				System.out.println("Transition: " + (t.getEvent() == null ? "<null> " : "") + t);
 			}
 
 		};
-		StateMachine.Event e = new EventImpl("Event");
+		StateMachine.Event e = new StateMachine.Event() {
+			public String toString() {
+				return "Event";
+			}
+		};
 
 		Transition t1 = new Transition(s1, e, action, s2);
-		Transition t2 = new Transition(s2, null, action, s3);
+		Transition t2 = new Transition(s2, action, s3);
 		Transition t3 = new Transition(s3, e, action, s1);
 
 		Set<Transition> set = new HashSet<>();
@@ -66,7 +70,7 @@ public class Test {
 		set.add(t3);
 
 		StateMachine machine = new StateMachine("Test", set, s1);
-		// machine.setVerbose(true);
+		 machine.setVerbose(true);
 		while (true) {
 			machine.receive(e);
 			Thread.sleep(1000);

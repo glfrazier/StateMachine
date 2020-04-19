@@ -14,13 +14,13 @@ public class StateMachine {
 	 * invoked. If one thinks of the transitions from a state as being implemented
 	 * by a switch statement, the WILDCARD event is the "default:" block.
 	 */
-	public static final Event WILDCARD_EVENT = new EventImpl("The 'Wildcard' Event");
+	public static final String WILDCARD_EVENT = "*";
 
 	private String name;
 
 	private Set<State> states;
 
-	private Map<State, Map<Event, Transition>> stateTransitionMap;
+	private Map<State, Map<String, Transition>> stateTransitionMap;
 
 	protected State currentState;
 
@@ -67,7 +67,7 @@ public class StateMachine {
 	public StateMachine(String name) {
 		this.name = name;
 		states = new HashSet<State>();
-		stateTransitionMap = new HashMap<State, Map<Event, Transition>>();
+		stateTransitionMap = new HashMap<State, Map<String, Transition>>();
 	}
 
 	/**
@@ -75,7 +75,7 @@ public class StateMachine {
 	 * specified (or changed) by this method. Will have no effect if the state
 	 * machine has already been started.
 	 * 
-	 * @param s
+	 * @param s the initial state for the state machine
 	 */
 	public void setStartState(State s) {
 		this.startState = s;
@@ -90,12 +90,12 @@ public class StateMachine {
 	public void addTransition(Transition t) {
 		State fromState = t.getFromState();
 		states.add(fromState);
-		Map<Event, Transition> transitionMap = stateTransitionMap.get(fromState);
+		Map<String, Transition> transitionMap = stateTransitionMap.get(fromState);
 		if (transitionMap == null) {
-			transitionMap = new HashMap<Event, Transition>();
+			transitionMap = new HashMap<String, Transition>();
 			stateTransitionMap.put(t.getFromState(), transitionMap);
 		}
-		if (t.getInput() == null) {
+		if (t.getEvent() == null) {
 			if (!transitionMap.isEmpty()) {
 				throw new IllegalArgumentException("Defining a null-input-transition from state " + fromState
 						+ " when there are other transitions from that state.");
@@ -106,13 +106,24 @@ public class StateMachine {
 						+ " when there is already a null-transition defined from that state.");
 			}
 		}
-		transitionMap.put(t.getInput(), t);
+		String key = (t.getEvent() == null ? null : t.getEvent().toString());
+		transitionMap.put(key, t);
 	}
 
 	/**
-	 * Causes the StateMachine to enter its initial state. Note that one can receive
-	 * inputs without invoking <code>begin()</code>. If you do, the startState is
-	 * entered before the input is processed.
+	 * Obtain the current state of the state machine
+	 * 
+	 * @return the current state
+	 */
+	public State getCurrentState() {
+		return currentState;
+	}
+
+	/**
+	 * Causes the StateMachine to enter its initial state. If this method is not
+	 * invoked, the state machine will enter its start state when the first input is
+	 * received. While it is only necessary to invoke this method if the state
+	 * machine itself initiates processing, it is good practice to invoke it.
 	 * 
 	 * @see #receive(Event)
 	 */
@@ -125,7 +136,7 @@ public class StateMachine {
 			System.out.println(this + " is entering state " + state);
 		}
 		currentState = state;
-		Map<Event, Transition> transitionMap = stateTransitionMap.get(currentState);
+		Map<String, Transition> transitionMap = stateTransitionMap.get(currentState);
 		if (transitionMap == null) {
 			// The state machine is in a terminal state
 			return;
@@ -159,14 +170,15 @@ public class StateMachine {
 	}
 
 	/**
-	 * Non-null transitions can only be processed when an input Event is received.
+	 * Events trigger state transitions in the state machine. If {@link #begin()}
+	 * was not invoked on this machine, the start state is entered before the first
+	 * event is processed.
 	 * 
-	 * @param input the Event that is the next input to the StateMachine. If the
+	 * @param event the Event that is the next input to the StateMachine. If the
 	 *              input triggers a Transition, the Transition's action is invoked
-	 *              and the StateMachine will enter a new state, which may be the
-	 *              same as the previous state.
+	 *              and the StateMachine will enter the next state.
 	 */
-	public void receive(Event input) {
+	public void receive(Event event) {
 		if (currentState == null) {
 			if (verbose) {
 				System.out.println(this + " will enter its start state before processing inputs.");
@@ -174,9 +186,18 @@ public class StateMachine {
 			enterState(startState);
 		}
 		if (verbose) {
-			System.out.println(this + " received input " + input);
+			System.out.println(this + " received input " + event);
 		}
-		Map<Event, Transition> transitionMap = stateTransitionMap.get(currentState);
+		if (event instanceof TimedEvent) {
+			TimedEvent te = (TimedEvent) event;
+			if (transitionCount > te.getTransitionDeadline()) {
+				if (verbose) {
+					System.out.println(event + " ignored because its deadline has expired.");
+				}
+				return;
+			}
+		}
+		Map<String, Transition> transitionMap = stateTransitionMap.get(currentState);
 		if (transitionMap == null) {
 			// The state machine is in a terminal state
 			if (verbose) {
@@ -184,30 +205,32 @@ public class StateMachine {
 			}
 			return;
 		}
-		Transition t = transitionMap.get(input);
+		Transition t = transitionMap.get(event.toString());
 		if (t == null) {
 			t = transitionMap.get(WILDCARD_EVENT);
 			if (verbose && t != null) {
-				System.out.println(currentState + " is invoking the WILDCARD transition for input " + input);
+				System.out.println(currentState + " is invoking the WILDCARD transition for input " + event);
 			}
 		}
 		if (t == null) {
-			// There is no transition defined for the input in the curren state
+			// There is no transition defined for the input in the current state
 			if (verbose) {
-				System.out.println(currentState + " has no transition for input " + input);
+				System.out.println(currentState + " has no transition for input " + event);
 				System.out.println("\tAll transitions:");
-				for(Event key : transitionMap.keySet()) {
+				for (String key : transitionMap.keySet()) {
 					System.out.println("\t\t" + key);
 				}
 			}
 			return;
 		}
-		t = t.getUpdatedTransition(input);
+		t = t.getUpdatedTransition(event);
 		performTransition(t);
 	}
 
 	/**
-	 * Implemented by all objects that provide state machine actions.
+	 * If the transition from one state to another has an {@link Action} associated
+	 * with it, the Action's {@link #act(Transition)} method is invoked when the
+	 * transition occurs.
 	 * 
 	 * @author glfrazier
 	 *
@@ -215,29 +238,119 @@ public class StateMachine {
 	public static interface Action {
 
 		/**
-		 * Generate the output associated with the transition.
+		 * Perform the action associated with the transition.
 		 * 
 		 * @param t The transition that this action is associated with. Note that the
-		 *          input in the Transition is the instance that was received by the
-		 *          state machine as input, NOT the instance that was used to define the
-		 *          transition. While the two events are equal to each other per their
-		 *          definition of <code>equals</code>, the instance that was received as
-		 *          input may contain state that modifies the semantics of the Action.
+		 *          {@link Event} in the Transition is the instance that was received by
+		 *          the state machine to trigger this transition, NOT the instance that
+		 *          was used to define the transition. While the two events return the
+		 *          same String via their <code>toString</code> methods, the instance
+		 *          that triggered the transition may contain state (its "payload") that
+		 *          is processed by the Action.
 		 */
 		public void act(Transition t);
 	}
 
 	/**
-	 * A tagging interface for Events that trigger Transitions.
+	 * A tagging interface for Events that trigger Transitions. Note that it is the
+	 * String returned by the its <code>toString</code> method that identifies the
+	 * Event to the state machine.
 	 * 
 	 * @see EventImpl
 	 */
 	public static interface Event {
 
-		public String getName();
-		
+		@Override
+		public String toString();
+
 	}
 
+	/**
+	 * Implemented by events that must be processed by a specific point in the state
+	 * machine's life cycle. A timed event that is received when state machine's
+	 * transition count is greater than the timed event's deadline is ignored.
+	 * <p>
+	 * This interface is specifically intended to support timeout events. Consider a
+	 * state that is waiting to process an input that may never arrive. A timeout
+	 * event may be issued; if the timeout is received before the waited-upon event
+	 * occurs, an appropriate action is taken. Now consider that the state machine
+	 * may implement a loop such that this state is entered multiple times, and so
+	 * there may be multiple timeout events pending for the state machine. If the
+	 * timeout event generated at iteration <em>i</em> is processed in iteration
+	 * <em>i+1</em>, it would cause an erroneous timeout. By implementing the
+	 * {@link TimedEvent} interface, the timeout will be ignored if it is received
+	 * after the targeted state transition has occurred.
+	 * <p>
+	 * See {@link glf.msgxchg.MXStateMachine} for a state machine that uses
+	 * timeouts.
+	 * 
+	 * @see StateMachine#getTimeoutEvent()
+	 * @see StateMachine#getTimeoutEvent(String)
+	 * 
+	 * @author Greg Frazier
+	 *
+	 */
+	public static interface TimedEvent extends Event {
+
+		/**
+		 * Obtain the deadline for this event&mdash;the last valid transition count. If
+		 * this event is received after this point, it is ignored.
+		 * 
+		 * @return the deadline for this event.
+		 */
+		public long getTransitionDeadline();
+
+	}
+
+	/**
+	 * Obtain a timeout event that will expire after the next transition.
+	 * 
+	 * @return a timeout event named "TIMEOUT".
+	 * @see #getTimeoutEvent(String)
+	 */
+	public TimedEvent getTimeoutEvent() {
+
+		final long deadline = transitionCount + 1;
+
+		return new TimedEvent() {
+
+			@Override
+			public long getTransitionDeadline() {
+				return deadline;
+			}
+
+			public String toString() {
+				return "TIMEOUT";
+			}
+
+		};
+	}
+
+	/**
+	 * Obtain a timeout event with a specific String identifier that will expire
+	 * after the next transition.
+	 * 
+	 * @param name the name assigned to the event.
+	 * @return a timeout event with the specified name.
+	 * @see #getTimeoutEvent()
+	 */
+	public TimedEvent getTimeoutEvent(final String name) {
+
+		final long deadline = transitionCount + 1;
+
+		return new TimedEvent() {
+
+			@Override
+			public long getTransitionDeadline() {
+				return deadline;
+			}
+
+			public String toString() {
+				return name;
+			}
+
+		};
+	}
 
 	@Override
 	public String toString() {

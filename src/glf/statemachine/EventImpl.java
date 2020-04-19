@@ -1,40 +1,45 @@
 package glf.statemachine;
 
 /**
- * An Event implementation that uses its name and its source to implement
- * hashCode and equals.
+ * A helper class that allows one to easily wrap an object into a StateMachine
+ * Event. The name of the event is the payload's toString() result. A null
+ * payload will return the empty string.
  * 
  * @author Greg Frazier
- *  *
+ *
  */
-public class EventImpl implements StateMachine.Event {
+public class EventImpl<T> implements StateMachine.Event {
 
-	protected final String name;
+	private final T payload;
 
-	public EventImpl(String name) {
-		this.name = name;
+	/**
+	 * Construct an Event that holds the specified payload.
+	 * 
+	 * @param payload the item resides in the event
+	 * @see #getPayload()
+	 */
+	public EventImpl(T payload) {
+		this.payload = payload;
 	}
 
-	public String getName() {
-		return name;
+	/**
+	 * Extract the payload from the Event.
+	 * 
+	 * @return the payload
+	 */
+	public T getPayload() {
+		return payload;
 	}
 
-	@Override
-	public int hashCode() {
-		return name.hashCode();
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (o == null || !(o instanceof StateMachine.Event)) {
-			return false;
-		}
-		StateMachine.Event e = (StateMachine.Event) o;
-		return name.equals(e.getName());
-	}
-
+	/**
+	 * Returns <code>payload.toString()</code>, or "" if the payload is
+	 * <code>null</code>.
+	 */
 	@Override
 	public String toString() {
-		return name;
+		if (payload == null) {
+			return "";
+		}
+		return payload.toString();
 	}
 }
