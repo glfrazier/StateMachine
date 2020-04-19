@@ -37,10 +37,10 @@ public class MXStateMachine extends StateMachine {
 	private Timer timer = new Timer(true);
 
 	/**
-	 * A state machine has a name, a start state, and a set of transitions between
-	 * its states. This constructor sets those things up. In addition, it holds a
-	 * reference to the MessageExchanger that it is associated with and the port of
-	 * the remote MessageExchanger that it is sending messages to.
+	 * Set the state machine's name, start state, and the transitions between its
+	 * states. In addition, set the reference to the MessageExchanger that it is
+	 * associated with and the port of the remote MessageExchanger that it is
+	 * sending messages to.
 	 * 
 	 * @param mx        the MX that this state machine is providing protocol
 	 *                  services to.
@@ -51,18 +51,31 @@ public class MXStateMachine extends StateMachine {
 		super("MXStateMachine");
 		this.mx = mx;
 		this.otherPort = otherPort;
-				
+
+		// Specify which state we start in
+		this.setStartState(INITIAL_STATE);
+
+		// Create the state transitions for this state machine
+
+		// The first transition does not have an Event that triggers it. Just an action.
 		this.addTransition(new Transition(INITIAL_STATE, makeRequestAction(this), PROCESS_RESPONSE));
+
+		// There is magic here! This transition's event is created with a payload whose
+		// toString method returns the same String as a response message. Thus, this
+		// transition will be triggered by the receipt of a response message.
 		this.addTransition(new Transition(PROCESS_RESPONSE, new EventImpl<String>(Message.Type.RESPONSE.toString()),
 				makeRequestAction(this), PROCESS_RESPONSE));
+
+		// By using the state machine's getTimeoutEvent() method both here and in the
+		// makeRequestAction() below, we ensure that the event names match.
 		this.addTransition(new Transition(PROCESS_RESPONSE, getTimeoutEvent(), timeoutAction(this), TIMEOUT));
-		this.setStartState(INITIAL_STATE);
+
 	}
 
 	/**
-	 * Grab the thread in which the state machine is being processed. Used by the
-	 * timeout transition to interrupt the thread, which presumably is blocked on a
-	 * socket read.
+	 * Use the invocation of the machine's begin() method to grab the thread in which
+	 * the state machine is being processed. The timeout transition needs to be able
+	 * to interrupt this thread.
 	 */
 	@Override
 	public void begin() {
@@ -75,6 +88,10 @@ public class MXStateMachine extends StateMachine {
 
 			@Override
 			public void act(Transition t) {
+				// The event that triggers this transition will have the received message as its
+				// payload. Get the event, then get the payload.
+				// Unless this is the transition from the initial state, in which case the event
+				// is null.
 				Event event = t.getEvent();
 				int count = 0;
 				if (event != null) {
@@ -84,6 +101,7 @@ public class MXStateMachine extends StateMachine {
 					count = response.getValue();
 					System.out.println(mx + " received count=" + count + " from the other node.");
 				}
+				// The action in this transition is to create and send a new request.
 				Message newRequest = new Message(Type.REQUEST, count, mx.getPort());
 				try {
 					mx.send(newRequest, otherPort);
@@ -91,16 +109,23 @@ public class MXStateMachine extends StateMachine {
 					e.printStackTrace();
 					System.exit(-1);
 				}
+				// We also generate a timeout, in case the other side never responds to our
+				// message. Note the use of the state machine getTimeoutEvent method, which
+				// ensures both the correct name for the event and the correct deadline.
 				final StateMachine.TimedEvent timeout = machine.getTimeoutEvent();
 				TimerTask tt = new TimerTask() {
 
 					@Override
 					public void run() {
+						// The timer's task is to deliver the timeout event to the state machine. Note
+						// that, since this is a TimedEvent, the event will be ignored by the state
+						// machine if the machine has already transitioned. I.e., it will be ignored if
+						// a response was received from the other mx.
 						machine.receive(timeout);
 					}
 
 				};
-				timer.schedule(tt, 1000); // time out on receiving a response in one second
+				timer.schedule(tt, 1000); // time out after one second
 			}
 
 		};
