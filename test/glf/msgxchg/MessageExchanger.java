@@ -79,10 +79,11 @@ public class MessageExchanger {
 	}
 
 	public static void main(String args[]) throws InterruptedException {
+		boolean verbose = args.length > 0 && args[0].equals("-v");
 		MessageExchanger mx1 = new MessageExchanger("mx1");
 		MessageExchanger mx2 = new MessageExchanger("mx2");
 		MXStateMachine machine = new MXStateMachine(mx2, mx1.getPort());
-		// machine.setVerbose(true);
+		machine.setVerbose(verbose);
 		Thread t1 = new Thread() {
 			public void run() {
 				try {
