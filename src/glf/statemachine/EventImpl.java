@@ -12,14 +12,35 @@ public class EventImpl<T> implements StateMachine.Event {
 
 	private final T payload;
 
+	private final String name;
+
 	/**
-	 * Construct an Event that holds the specified payload.
+	 * Construct an Event that holds the specified payload. The Event's string value
+	 * (the output of {@link EventImpl#toString()}) is
+	 * <code>payload.toString()</code>.
 	 * 
 	 * @param payload the item resides in the event
 	 * @see #getPayload()
 	 */
 	public EventImpl(T payload) {
 		this.payload = payload;
+		this.name = null;
+	}
+
+	/**
+	 * Construct an Event that holds the specified payload. The Event's string value
+	 * (the output of {@link EventImpl#toString()}) is specified in the
+	 * <code>value</code> parameter.
+	 * 
+	 * @param payload the item resides in the event
+	 * @param value   the output of {@link #toString()}&mdash;this is how the state
+	 *                machine perceives the event
+	 * @see #getPayload()
+	 * @see #toString()
+	 */
+	public EventImpl(T payload, String value) {
+		this.payload = payload;
+		this.name = value;
 	}
 
 	/**
@@ -37,6 +58,9 @@ public class EventImpl<T> implements StateMachine.Event {
 	 */
 	@Override
 	public String toString() {
+		if (name != null) {
+			return name;
+		}
 		if (payload == null) {
 			return "";
 		}

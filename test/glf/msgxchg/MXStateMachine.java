@@ -60,11 +60,10 @@ public class MXStateMachine extends StateMachine {
 		// The first transition does not have an Event that triggers it. Just an action.
 		this.addTransition(new Transition(INITIAL_STATE, makeRequestAction(this), PROCESS_RESPONSE));
 
-		// There is magic here! This transition's event is created with a payload whose
-		// toString method returns the same String as a response message. Thus, this
-		// transition will be triggered by the receipt of a response message.
-		this.addTransition(new Transition(PROCESS_RESPONSE, new EventImpl<String>(Message.Type.RESPONSE.toString()),
-				makeRequestAction(this), PROCESS_RESPONSE));
+		// When PROCESS_RESPONSE processes a message it has received, it transitions to
+		// itself, sending a new request.
+		this.addTransition(new Transition(PROCESS_RESPONSE, new EventImpl<String>("RESPONSE"), makeRequestAction(this),
+				PROCESS_RESPONSE));
 
 		// By using the state machine's getTimeoutEvent() method both here and in the
 		// makeRequestAction() below, we ensure that the event names match.
@@ -73,9 +72,9 @@ public class MXStateMachine extends StateMachine {
 	}
 
 	/**
-	 * Use the invocation of the machine's begin() method to grab the thread in which
-	 * the state machine is being processed. The timeout transition needs to be able
-	 * to interrupt this thread.
+	 * Use the invocation of the machine's begin() method to grab the thread in
+	 * which the state machine is being processed. The timeout transition needs to
+	 * be able to interrupt this thread.
 	 */
 	@Override
 	public void begin() {

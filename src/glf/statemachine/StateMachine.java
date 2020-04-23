@@ -35,6 +35,8 @@ public class StateMachine {
 
 	private boolean verbose;
 
+	private Set<StateMachineTracker> callbacks = new HashSet<>();
+
 	/**
 	 * Construct a StateMachine that has the specified name, transitions, and
 	 * initial state.
@@ -137,10 +139,15 @@ public class StateMachine {
 		}
 		currentState = state;
 		Map<String, Transition> transitionMap = stateTransitionMap.get(currentState);
-		if (transitionMap == null) {
+		if (transitionMap == null || transitionMap.isEmpty()) {
 			// The state machine is in a terminal state
+			for (StateMachineTracker tracker : callbacks) {
+				tracker.stateMachineEnded(this);
+			}
 			return;
 		}
+		// Check for a null-transition (a transition that does not require an event
+		// to trigger it).
 		Transition t = transitionMap.get(null);
 		if (t == null) {
 			// There will be no further activity until an input is received
@@ -149,6 +156,7 @@ public class StateMachine {
 		if (verbose) {
 			System.out.println(currentState + " has a null transition " + t);
 		}
+		// This state has a null-transition.
 		performTransition(t);
 	}
 
@@ -227,6 +235,10 @@ public class StateMachine {
 		performTransition(t);
 	}
 
+	public void registerCallback(StateMachineTracker callback) {
+		callbacks.add(callback);
+	}
+
 	/**
 	 * If the transition from one state to another has an {@link Action} associated
 	 * with it, the Action's {@link #act(Transition)} method is invoked when the
@@ -249,6 +261,22 @@ public class StateMachine {
 		 *          is processed by the Action.
 		 */
 		public void act(Transition t);
+	}
+
+	/**
+	 * A callback method, invoked when the state machine enters a terminal state.
+	 * 
+	 * @see #registerCallback(StateMachineTracker)
+	 */
+	public static interface StateMachineTracker {
+
+		/**
+		 * This method is invoked when the tracked state machine enters a terminal state.
+		 * 
+		 * @param machine the state machine being tracked.
+		 * @see #registerCallback(StateMachineTracker)
+		 */
+		public void stateMachineEnded(StateMachine machine);
 	}
 
 	/**

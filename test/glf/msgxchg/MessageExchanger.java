@@ -135,7 +135,7 @@ public class MessageExchanger {
 			Message m = receive();
 			// When we receive a message, we wrap it in an event and hand it to the state
 			// machine for processing.
-			machine.receive(new EventImpl<Message>(m));
+			machine.receive(new EventImpl<Message>(m, "RESPONSE"));
 		}
 	}
 }

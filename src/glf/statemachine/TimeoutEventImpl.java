@@ -14,9 +14,10 @@ public class TimeoutEventImpl<T> implements StateMachine.TimedEvent {
 
 	private final T payload;
 	private final long deadline;
+	private final String name;
 
 	/**
-	 * Construct a timed event that holds a payload. 
+	 * Construct a timed event that holds a payload.
 	 * 
 	 * @param payload  the object whose toString method will identify this event.
 	 * @param deadline the last valid transition for this event
@@ -25,6 +26,22 @@ public class TimeoutEventImpl<T> implements StateMachine.TimedEvent {
 	public TimeoutEventImpl(T payload, long deadline) {
 		this.payload = payload;
 		this.deadline = deadline;
+		this.name = null;
+	}
+
+	/**
+	 * Construct a timed event that holds a payload.
+	 * 
+	 * @param payload  the object whose toString method will identify this event.
+	 * @param deadline the last valid transition for this event
+	 * @param value    the value returned by <code>toString()</code>. This is the
+	 *                 value by which the state machine knows this event.
+	 * @see StateMachine#getTransitionCount()
+	 */
+	public TimeoutEventImpl(T payload, long deadline, String value) {
+		this.payload = payload;
+		this.deadline = deadline;
+		this.name = value;
 	}
 
 	public T getPayload() {
@@ -36,6 +53,9 @@ public class TimeoutEventImpl<T> implements StateMachine.TimedEvent {
 	 */
 	@Override
 	public String toString() {
+		if (name != null) {
+			return name;
+		}
 		if (payload == null) {
 			return "";
 		}
