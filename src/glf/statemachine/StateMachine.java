@@ -130,14 +130,18 @@ public class StateMachine {
 	 * @see #receive(Event)
 	 */
 	public void begin() {
-		enterState(startState);
+		enterState(startState, null);
 	}
 
-	private void enterState(State state) {
+	private void enterState(State state, Event e) {
 		if (verbose) {
 			System.out.println(this + " is entering state " + state);
 		}
 		currentState = state;
+		State.Action action = currentState.getAction();
+		if (action != null) {
+			action.act(currentState, e);
+		}
 		Map<String, Transition> transitionMap = stateTransitionMap.get(currentState);
 		if (transitionMap == null || transitionMap.isEmpty()) {
 			// The state machine is in a terminal state
@@ -157,7 +161,7 @@ public class StateMachine {
 			System.out.println(currentState + " has a null transition " + t);
 		}
 		// This state has a null-transition.
-		performTransition(t);
+		performTransition(t, null);
 	}
 
 	/**
@@ -168,13 +172,9 @@ public class StateMachine {
 	 * 
 	 * @param t
 	 */
-	private void performTransition(Transition t) {
-		Action action = t.getAction();
-		if (action != null) {
-			action.act(t);
-		}
+	private void performTransition(Transition t, Event e) {
 		transitionCount++;
-		enterState(t.getToState());
+		enterState(t.getToState(), e);
 	}
 
 	/**
@@ -191,7 +191,7 @@ public class StateMachine {
 			if (verbose) {
 				System.out.println(this + " will enter its start state before processing inputs.");
 			}
-			enterState(startState);
+			enterState(startState, null);
 		}
 		if (verbose) {
 			System.out.println(this + " received input " + event);
@@ -231,36 +231,11 @@ public class StateMachine {
 			}
 			return;
 		}
-		t = t.getUpdatedTransition(event);
-		performTransition(t);
+		performTransition(t, event);
 	}
 
 	public void registerCallback(StateMachineTracker callback) {
 		callbacks.add(callback);
-	}
-
-	/**
-	 * If the transition from one state to another has an {@link Action} associated
-	 * with it, the Action's {@link #act(Transition)} method is invoked when the
-	 * transition occurs.
-	 * 
-	 * @author glfrazier
-	 *
-	 */
-	public static interface Action {
-
-		/**
-		 * Perform the action associated with the transition.
-		 * 
-		 * @param t The transition that this action is associated with. Note that the
-		 *          {@link Event} in the Transition is the instance that was received by
-		 *          the state machine to trigger this transition, NOT the instance that
-		 *          was used to define the transition. While the two events return the
-		 *          same String via their <code>toString</code> methods, the instance
-		 *          that triggered the transition may contain state (its "payload") that
-		 *          is processed by the Action.
-		 */
-		public void act(Transition t);
 	}
 
 	/**

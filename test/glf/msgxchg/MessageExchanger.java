@@ -13,7 +13,7 @@ import glf.msgxchg.Message.Type;
 import glf.statemachine.EventImpl;
 
 public class MessageExchanger {
-
+	
 	private String name;
 	DatagramSocket socket;
 	int port;
@@ -118,8 +118,9 @@ public class MessageExchanger {
 				try {
 					mx2.processStateMachine(machine);
 				} catch (Exception e) {
-					System.out.println("mx2 terminating.");
+					System.out.println("mx2 terminating due to exception " + e);
 				}
+				System.out.println("mx2 state machine completed.");
 			}
 		};
 		t2.start();
@@ -129,13 +130,19 @@ public class MessageExchanger {
 		System.out.println("t1 terminated. Exiting main().");
 	}
 
-	protected void processStateMachine(MXStateMachine machine) throws Exception {
+	protected void processStateMachine(MXStateMachine machine) {
 		machine.begin();
-		while (!Thread.interrupted() && machine.getCurrentState() != MXStateMachine.TIMEOUT) {
-			Message m = receive();
+		while (!Thread.interrupted()// && machine.getCurrentState() != machine.finished
+				) {
+			Message m = null;
+			try {
+				m = receive();
+			} catch (Exception e) {
+				return;
+			}
 			// When we receive a message, we wrap it in an event and hand it to the state
 			// machine for processing.
-			machine.receive(new EventImpl<Message>(m, "RESPONSE"));
+			machine.receive(new EventImpl<Message>(m, MXStateMachine.RESPONSE));
 		}
 	}
 }

@@ -23,46 +23,46 @@ public class Test {
 
 		public int count = 0;
 
-		public StateWithCount(String name) {
-			super(name);
+		public StateWithCount(String name, Action a) {
+			super(name, a);
 		}
 
 		@Override
 		public String toString() {
-			return name + "(" + count + ")";
+			return name + "(count=" + count + ")";
 		}
 	}
 
 	public static void main(String[] args) throws Exception {
 
-		StateWithCount s1 = new StateWithCount("State 1");
-		StateWithCount s2 = new StateWithCount("State 2");
-		StateWithCount s3 = new StateWithCount("State 3");
-
-		StateMachine.Action action = new StateMachine.Action() {
+		State.Action action = new State.Action() {
 
 			@Override
-			public void act(Transition t) {
-				StateWithCount swt = (StateWithCount) t.getFromState();
-				if (swt.count == 8) {
+			public void act(State s, StateMachine.Event e) {
+				StateWithCount swt = (StateWithCount) s;
+				if (swt.count == 4) {
 					System.out.println("Done!");
 					System.exit(0);
 				}
-				StateWithCount dst = (StateWithCount) t.getToState();
-				dst.count = swt.count + 1;
-				System.out.println("Transition: " + (t.getEvent() == null ? "<null> " : "") + t);
+				System.out.println("Entered " + swt + " in response to " + e);
+				swt.count++;
 			}
 
 		};
+
+		StateWithCount s1 = new StateWithCount("State 1", action);
+		StateWithCount s2 = new StateWithCount("State 2", action);
+		StateWithCount s3 = new StateWithCount("State 3", action);
+
 		StateMachine.Event e = new StateMachine.Event() {
 			public String toString() {
-				return "Event";
+				return "TestEvent";
 			}
 		};
 
-		Transition t1 = new Transition(s1, e, action, s2);
-		Transition t2 = new Transition(s2, action, s3);
-		Transition t3 = new Transition(s3, e, action, s1);
+		Transition t1 = new Transition(s1, e, s2);
+		Transition t2 = new Transition(s2, s3);
+		Transition t3 = new Transition(s3, e, s1);
 
 		Set<Transition> set = new HashSet<>();
 		set.add(t1);
@@ -70,7 +70,7 @@ public class Test {
 		set.add(t3);
 
 		StateMachine machine = new StateMachine("Test", set, s1);
-		 machine.setVerbose(true);
+		machine.setVerbose(true);
 		while (true) {
 			machine.receive(e);
 			Thread.sleep(1000);

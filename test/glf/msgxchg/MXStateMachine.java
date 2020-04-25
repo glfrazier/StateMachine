@@ -6,6 +6,7 @@ import java.util.TimerTask;
 import glf.msgxchg.Message.Type;
 import glf.statemachine.EventImpl;
 import glf.statemachine.State;
+import glf.statemachine.State.Action;
 import glf.statemachine.StateMachine;
 import glf.statemachine.Transition;
 
@@ -26,15 +27,17 @@ import glf.statemachine.Transition;
  *
  */
 public class MXStateMachine extends StateMachine {
+	
+	public static final String RESPONSE = "RESPONSE";
 
-	public static final State INITIAL_STATE = new State("InitialState");
-	public static final State PROCESS_RESPONSE = new State("ProcessResponse");
-	public static final State TIMEOUT = new State("RequestTimedOut");
+	public State makeRequest = new State("MakeRequest", makeRequestAction(), this);
+	public State finished = new State("RequestTimedOut", timeoutAction(), this);
 
 	private MessageExchanger mx;
 	private int otherPort;
 	private Thread thread;
 	private Timer timer = new Timer(true);
+	private Message receivedMessage;
 
 	/**
 	 * Set the state machine's name, start state, and the transitions between its
@@ -53,21 +56,15 @@ public class MXStateMachine extends StateMachine {
 		this.otherPort = otherPort;
 
 		// Specify which state we start in
-		this.setStartState(INITIAL_STATE);
+		this.setStartState(makeRequest);
 
 		// Create the state transitions for this state machine
 
-		// The first transition does not have an Event that triggers it. Just an action.
-		this.addTransition(new Transition(INITIAL_STATE, makeRequestAction(this), PROCESS_RESPONSE));
+		// As long as we keep getting responses, keep making requests.
+		this.addTransition(new Transition(makeRequest, RESPONSE, makeRequest));
 
-		// When PROCESS_RESPONSE processes a message it has received, it transitions to
-		// itself, sending a new request.
-		this.addTransition(new Transition(PROCESS_RESPONSE, new EventImpl<String>("RESPONSE"), makeRequestAction(this),
-				PROCESS_RESPONSE));
-
-		// By using the state machine's getTimeoutEvent() method both here and in the
-		// makeRequestAction() below, we ensure that the event names match.
-		this.addTransition(new Transition(PROCESS_RESPONSE, getTimeoutEvent(), timeoutAction(this), TIMEOUT));
+		// If a request times out, we are finished
+		this.addTransition(new Transition(makeRequest, getTimeoutEvent(), finished));
 
 	}
 
@@ -82,16 +79,15 @@ public class MXStateMachine extends StateMachine {
 		super.begin();
 	}
 
-	private Action makeRequestAction(MXStateMachine machine) {
+	private Action makeRequestAction() {
 		return new Action() {
 
 			@Override
-			public void act(Transition t) {
+			public void act(State s, Event event) {
 				// The event that triggers this transition will have the received message as its
-				// payload. Get the event, then get the payload.
+				// payload. Get the payload.
 				// Unless this is the transition from the initial state, in which case the event
 				// is null.
-				Event event = t.getEvent();
 				int count = 0;
 				if (event != null) {
 					@SuppressWarnings("unchecked")
@@ -111,7 +107,7 @@ public class MXStateMachine extends StateMachine {
 				// We also generate a timeout, in case the other side never responds to our
 				// message. Note the use of the state machine getTimeoutEvent method, which
 				// ensures both the correct name for the event and the correct deadline.
-				final StateMachine.TimedEvent timeout = machine.getTimeoutEvent();
+				final StateMachine.TimedEvent timeout = s.getMachine().getTimeoutEvent();
 				TimerTask tt = new TimerTask() {
 
 					@Override
@@ -120,7 +116,7 @@ public class MXStateMachine extends StateMachine {
 						// that, since this is a TimedEvent, the event will be ignored by the state
 						// machine if the machine has already transitioned. I.e., it will be ignored if
 						// a response was received from the other mx.
-						machine.receive(timeout);
+						s.getMachine().receive(timeout);
 					}
 
 				};
@@ -130,16 +126,17 @@ public class MXStateMachine extends StateMachine {
 		};
 	}
 
-	private Action timeoutAction(MXStateMachine machine) {
+	private Action timeoutAction() {
 		return new Action() {
 
 			@Override
-			public void act(Transition t) {
+			public void act(State s, Event e) {
 				System.out.println(mx + " timed out waiting for a response.");
 				// We are transitioning from PROCESS_REQUEST to TIMEOUT, because we did not
 				// receive a response to a request before the timeout expired. The thread that
 				// the staet machine is running in is waiting for a packet that will never
 				// arrive. Interrupt it, so that the thread can terminate.
+				MXStateMachine machine = (MXStateMachine)s.getMachine();
 				machine.thread.interrupt();
 			}
 
