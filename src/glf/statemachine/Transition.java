@@ -1,6 +1,6 @@
 package glf.statemachine;
 
-import glf.statemachine.StateMachine.Event;
+import glf.event.Event;
 
 /**
  * A transition from one state to another in a Moore state machine. This is the
@@ -25,7 +25,7 @@ public class Transition {
 	 * The event that triggers the transition. It may be <code>null</code>, in which
 	 * case any other transition from the <code>fromState</code> will be ignored.
 	 */
-	protected StateMachine.Event event;
+	protected Event event;
 
 	/**
 	 * Construct a state machine transition, using a String to identify the Event

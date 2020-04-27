@@ -1,7 +1,7 @@
 package glf.statemachine;
 
-import java.util.HashSet;
-import java.util.Set;
+import glf.event.Event;
+import glf.event.EventingSystem;
 
 /**
  * This test builds a StateMachine and then puts it through its paces. Note that
@@ -23,8 +23,8 @@ public class Test {
 
 		public int count = 0;
 
-		public StateWithCount(String name, Action a) {
-			super(name, a);
+		public StateWithCount(String name, Action a, StateMachine m) {
+			super(name, a, m);
 		}
 
 		@Override
@@ -35,10 +35,35 @@ public class Test {
 
 	public static void main(String[] args) throws Exception {
 
+		EventingSystem es = new EventingSystem("Test Eventing System");
+		StateMachine machine = new StateMachine("Test", es);
+		
+		Event testEvent = new Event() {
+			public String toString() {
+				return "TestEvent";
+			}
+		};
+		
 		State.Action action = new State.Action() {
 
 			@Override
-			public void act(State s, StateMachine.Event e) {
+			public void act(State s, Event e) {
+				StateWithCount swt = (StateWithCount) s;
+				if (swt.count == 4) {
+					System.out.println("Done!");
+					System.exit(0);
+				}
+				System.out.println("Entered " + swt + " in response to " + e);
+				swt.count++;
+				s.machine.receive(testEvent);
+			}
+
+		};	
+		
+		State.Action noEventAction = new State.Action() {
+
+			@Override
+			public void act(State s, Event e) {
 				StateWithCount swt = (StateWithCount) s;
 				if (swt.count == 4) {
 					System.out.println("Done!");
@@ -50,31 +75,20 @@ public class Test {
 
 		};
 
-		StateWithCount s1 = new StateWithCount("State 1", action);
-		StateWithCount s2 = new StateWithCount("State 2", action);
-		StateWithCount s3 = new StateWithCount("State 3", action);
+		StateWithCount s1 = new StateWithCount("State 1", action, machine);
+		StateWithCount s2 = new StateWithCount("State 2", noEventAction, machine);
+		StateWithCount s3 = new StateWithCount("State 3", action, machine);
 
-		StateMachine.Event e = new StateMachine.Event() {
-			public String toString() {
-				return "TestEvent";
-			}
-		};
+		machine.addTransition(new Transition(s1, testEvent, s2));
+		machine.addTransition(new Transition(s2, s3));
+		machine.addTransition(new Transition(s3, testEvent, s1));
+		machine.setStartState(s1);
 
-		Transition t1 = new Transition(s1, e, s2);
-		Transition t2 = new Transition(s2, s3);
-		Transition t3 = new Transition(s3, e, s1);
-
-		Set<Transition> set = new HashSet<>();
-		set.add(t1);
-		set.add(t2);
-		set.add(t3);
-
-		StateMachine machine = new StateMachine("Test", set, s1);
+		es.runForever();
+		es.setVerbose(true);
 		machine.setVerbose(true);
-		while (true) {
-			machine.receive(e);
-			Thread.sleep(1000);
-		}
+		machine.receive(testEvent);
+		es.run();
 
 	}
 

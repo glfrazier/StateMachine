@@ -3,6 +3,8 @@ package glf.msgxchg;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import glf.event.Event;
+import glf.event.EventingSystem;
 import glf.msgxchg.Message.Type;
 import glf.statemachine.EventImpl;
 import glf.statemachine.State;
@@ -50,8 +52,8 @@ public class MXStateMachine extends StateMachine {
 	 * @param otherPort the port of the remote MX that this state machine is
 	 *                  sending/receiving messages to/from.
 	 */
-	public MXStateMachine(MessageExchanger mx, int otherPort) {
-		super("MXStateMachine");
+	public MXStateMachine(MessageExchanger mx, EventingSystem es, int otherPort) {
+		super("MXStateMachine", es);
 		this.mx = mx;
 		this.otherPort = otherPort;
 

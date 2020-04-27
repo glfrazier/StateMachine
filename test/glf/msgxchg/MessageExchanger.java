@@ -9,11 +9,12 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 
+import glf.event.EventingSystem;
 import glf.msgxchg.Message.Type;
 import glf.statemachine.EventImpl;
 
 public class MessageExchanger {
-	
+
 	private String name;
 	DatagramSocket socket;
 	int port;
@@ -80,9 +81,12 @@ public class MessageExchanger {
 
 	public static void main(String args[]) throws InterruptedException {
 		boolean verbose = args.length > 0 && args[0].equals("-v");
+		EventingSystem es = new EventingSystem("Eventing for MX");
+		es.setVerbose(verbose);
+		es.runForever();
 		MessageExchanger mx1 = new MessageExchanger("mx1");
 		MessageExchanger mx2 = new MessageExchanger("mx2");
-		MXStateMachine machine = new MXStateMachine(mx2, mx1.getPort());
+		MXStateMachine machine = new MXStateMachine(mx2, es, mx1.getPort());
 		machine.setVerbose(verbose);
 
 		// Put each of the MessageExchangers into its own thread
@@ -99,6 +103,10 @@ public class MessageExchanger {
 			}
 		};
 		t1.start();
+		
+		Thread t3 = new Thread(es);
+		t3.setDaemon(true);
+		t3.start();
 
 		// The second one is under the control of an MXStateMachine
 		Thread t2 = new Thread() {
@@ -133,7 +141,7 @@ public class MessageExchanger {
 	protected void processStateMachine(MXStateMachine machine) {
 		machine.begin();
 		while (!Thread.interrupted()// && machine.getCurrentState() != machine.finished
-				) {
+		) {
 			Message m = null;
 			try {
 				m = receive();

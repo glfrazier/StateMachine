@@ -5,7 +5,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class StateMachine {
+import glf.event.Event;
+import glf.event.EventProcessor;
+import glf.event.EventingSystem;
+
+public class StateMachine implements EventProcessor {
 
 	/**
 	 * If this Event is used in a transition from a given state S, then when an
@@ -33,9 +37,11 @@ public class StateMachine {
 	 */
 	private long transitionCount;
 
-	private boolean verbose;
+	protected boolean verbose;
 
 	private Set<StateMachineTracker> callbacks = new HashSet<>();
+
+	protected EventingSystem eventingSystem;
 
 	/**
 	 * Construct a StateMachine that has the specified name, transitions, and
@@ -46,8 +52,8 @@ public class StateMachine {
 	 *                    the set of states is infered from the transitions.
 	 * @param startState  the initial state of the machine
 	 */
-	public StateMachine(String name, Set<Transition> transitions, State startState) {
-		this(name, startState);
+	public StateMachine(String name, EventingSystem es, Set<Transition> transitions, State startState) {
+		this(name, es, startState);
 		for (Transition t : transitions) {
 			addTransition(t);
 		}
@@ -61,13 +67,14 @@ public class StateMachine {
 	 * @param name       the name of the state machine
 	 * @param startState the initial state of the machine
 	 */
-	public StateMachine(String name, State startState) {
-		this(name);
+	public StateMachine(String name, EventingSystem es, State startState) {
+		this(name, es);
 		this.startState = startState;
 	}
 
-	public StateMachine(String name) {
+	public StateMachine(String name, EventingSystem es) {
 		this.name = name;
+		this.eventingSystem = es;
 		states = new HashSet<State>();
 		stateTransitionMap = new HashMap<State, Map<String, Transition>>();
 	}
@@ -187,6 +194,10 @@ public class StateMachine {
 	 *              and the StateMachine will enter the next state.
 	 */
 	public void receive(Event event) {
+		eventingSystem.scheduleEvent(this, event);
+	}
+	
+	public void process(Event event, EventingSystem es) {
 		if (currentState == null) {
 			if (verbose) {
 				System.out.println(this + " will enter its start state before processing inputs.");
@@ -252,20 +263,6 @@ public class StateMachine {
 		 * @see #registerCallback(StateMachineTracker)
 		 */
 		public void stateMachineEnded(StateMachine machine);
-	}
-
-	/**
-	 * A tagging interface for Events that trigger Transitions. Note that it is the
-	 * String returned by the its <code>toString</code> method that identifies the
-	 * Event to the state machine.
-	 * 
-	 * @see EventImpl
-	 */
-	public static interface Event {
-
-		@Override
-		public String toString();
-
 	}
 
 	/**

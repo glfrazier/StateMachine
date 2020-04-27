@@ -1,5 +1,7 @@
 package glf.statemachine;
 
+import glf.event.Event;
+
 /**
  * The state of a state machine.
  * 
@@ -110,7 +112,7 @@ public class State {
 		 * @param e The event that caused the transition to this state
 		 * 
 		 */
-		public void act(State s, StateMachine.Event e);
+		public void act(State s, Event e);
 	}
 
 }

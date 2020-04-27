@@ -1,5 +1,7 @@
 package glf.statemachine;
 
+import glf.event.Event;
+
 /**
  * A helper class that allows one to easily wrap an object into a StateMachine
  * Event. The name of the event is the payload's toString() result. A null
@@ -8,7 +10,7 @@ package glf.statemachine;
  * @author Greg Frazier
  *
  */
-public class EventImpl<T> implements StateMachine.Event {
+public class EventImpl<T> implements Event {
 
 	private final T payload;
 
