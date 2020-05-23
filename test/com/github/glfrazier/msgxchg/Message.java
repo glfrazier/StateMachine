@@ -1,4 +1,4 @@
-package glf.msgxchg;
+package com.github.glfrazier.msgxchg;
 
 import java.io.Serializable;
 

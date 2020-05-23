@@ -1,4 +1,4 @@
-package glf.statemachine.builder;
+package com.github.glfrazier.statemachine.builder;
 
 import java.io.BufferedReader;
 import java.io.File;

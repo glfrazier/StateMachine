@@ -1,6 +1,6 @@
-package glf.statemachine;
+package com.github.glfrazier.statemachine;
 
-import glf.event.Event;
+import com.github.glfrazier.Event;
 
 /**
  * A transition from one state to another in a Moore state machine. This is the

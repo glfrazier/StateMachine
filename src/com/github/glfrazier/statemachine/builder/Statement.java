@@ -1,4 +1,4 @@
-package glf.statemachine.builder;
+package com.github.glfrazier.statemachine.builder;
 
 import java.util.ArrayList;
 import java.util.List;

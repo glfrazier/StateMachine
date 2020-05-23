@@ -8,4 +8,4 @@
  * To run this example, invoke {@link MessageExchanger#main(String[])}.<br>
  * Pass a "-v" argument to put the state machine into verbose mode.
  */
-package glf.msgxchg;
+package com.github.glfrazier.msgxchg;

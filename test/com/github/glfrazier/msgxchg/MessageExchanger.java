@@ -1,4 +1,4 @@
-package glf.msgxchg;
+package com.github.glfrazier.msgxchg;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -9,9 +9,9 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 
-import glf.event.EventingSystem;
-import glf.msgxchg.Message.Type;
-import glf.statemachine.EventImpl;
+import com.github.glfrazier.EventingSystem;
+import com.github.glfrazier.msgxchg.Message.Type;
+import com.github.glfrazier.statemachine.EventImpl;
 
 public class MessageExchanger {
 
@@ -83,7 +83,7 @@ public class MessageExchanger {
 		boolean verbose = args.length > 0 && args[0].equals("-v");
 		EventingSystem es = new EventingSystem("Eventing for MX");
 		es.setVerbose(verbose);
-		es.runForever();
+		es.exitOnEmptyQueue(false);
 		MessageExchanger mx1 = new MessageExchanger("mx1");
 		MessageExchanger mx2 = new MessageExchanger("mx2");
 		MXStateMachine machine = new MXStateMachine(mx2, es, mx1.getPort());

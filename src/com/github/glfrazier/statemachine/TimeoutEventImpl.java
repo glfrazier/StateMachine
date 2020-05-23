@@ -1,4 +1,4 @@
-package glf.statemachine;
+package com.github.glfrazier.statemachine;
 
 /**
  * A helper class that allows one to easily wrap an object into a StateMachine

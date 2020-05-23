@@ -1,7 +1,7 @@
-package glf.statemachine;
+package com.github.glfrazier.statemachine;
 
-import glf.event.Event;
-import glf.event.EventingSystem;
+import com.github.glfrazier.Event;
+import com.github.glfrazier.EventingSystem;
 
 /**
  * This test builds a StateMachine and then puts it through its paces. Note that
@@ -84,7 +84,7 @@ public class Test {
 		machine.addTransition(new Transition(s3, testEvent, s1));
 		machine.setStartState(s1);
 
-		es.runForever();
+		es.exitOnEmptyQueue(false);
 		es.setVerbose(true);
 		machine.setVerbose(true);
 		machine.receive(testEvent);

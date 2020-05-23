@@ -1,24 +1,32 @@
-package glf.statemachine;
+package com.github.glfrazier.statemachine;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import glf.event.Event;
-import glf.event.EventProcessor;
-import glf.event.EventingSystem;
+import com.github.glfrazier.Event;
+import com.github.glfrazier.EventProcessor;
+import com.github.glfrazier.EventingSystem;
 
 public class StateMachine implements EventProcessor {
 
 	/**
-	 * If this Event is used in a transition from a given state S, then when an
-	 * Event is received while the StateMachine is in S, and there are no
-	 * transitions whose Event matches the input, then the WILDCARD transition is
-	 * invoked. If one thinks of the transitions from a state as being implemented
-	 * by a switch statement, the WILDCARD event is the "default:" block.
+	 * If this String (or an Event whose <code>toString()</code> method returns this
+	 * String) is used in a transition from a given state S, then when an Event is
+	 * received while the StateMachine is in S, and there are no transitions whose
+	 * Event matches the input, then the WILDCARD transition is invoked. If one
+	 * thinks of using a switch statement over the received event to select the
+	 * transition from a state, the WILDCARD event is the "default:" block for that
+	 * switch statement.
 	 */
 	public static final String WILDCARD_EVENT = "*";
+
+	/**
+	 * The default event name for timeout events.
+	 * @see #getTimeoutEvent()
+	 */
+	public static final String TIMEOUT = "TIMEOUT";
 
 	private String name;
 
@@ -142,7 +150,8 @@ public class StateMachine implements EventProcessor {
 
 	private void enterState(State state, Event e) {
 		if (verbose) {
-			System.out.println(this + " is entering state " + state);
+			System.out.println(this + " is entering state (" + state + ")");
+			System.out.flush();
 		}
 		currentState = state;
 		State.Action action = currentState.getAction();
@@ -165,7 +174,8 @@ public class StateMachine implements EventProcessor {
 			return;
 		}
 		if (verbose) {
-			System.out.println(currentState + " has a null transition " + t);
+			System.out.println("*" + currentState + ") has a null transition " + t);
+			System.out.flush();
 		}
 		// This state has a null-transition.
 		performTransition(t, null);
@@ -196,22 +206,24 @@ public class StateMachine implements EventProcessor {
 	public void receive(Event event) {
 		eventingSystem.scheduleEvent(this, event);
 	}
-	
+
 	public void process(Event event, EventingSystem es) {
 		if (currentState == null) {
 			if (verbose) {
 				System.out.println(this + " will enter its start state before processing inputs.");
+				System.out.flush();
 			}
 			enterState(startState, null);
 		}
 		if (verbose) {
-			System.out.println(this + " received input " + event);
+			System.out.println(this + " received input <" + event + ">");
 		}
 		if (event instanceof TimedEvent) {
 			TimedEvent te = (TimedEvent) event;
 			if (transitionCount > te.getTransitionDeadline()) {
 				if (verbose) {
-					System.out.println(event + " ignored because its deadline has expired.");
+					System.out.println("<" + event + "> ignored because its deadline has expired.");
+					System.out.flush();
 				}
 				return;
 			}
@@ -220,7 +232,8 @@ public class StateMachine implements EventProcessor {
 		if (transitionMap == null) {
 			// The state machine is in a terminal state
 			if (verbose) {
-				System.out.println(currentState + " is a terminal state.");
+				System.out.println("(" + currentState + ") is a terminal state.");
+				System.out.flush();
 			}
 			return;
 		}
@@ -228,17 +241,18 @@ public class StateMachine implements EventProcessor {
 		if (t == null) {
 			t = transitionMap.get(WILDCARD_EVENT);
 			if (verbose && t != null) {
-				System.out.println(currentState + " is invoking the WILDCARD transition for input " + event);
+				System.out.println("(" + currentState + ") is invoking the WILDCARD transition for input <" + event + ">");
 			}
 		}
 		if (t == null) {
 			// There is no transition defined for the input in the current state
 			if (verbose) {
-				System.out.println(currentState + " has no transition for input " + event);
+				System.out.println("(" + currentState + ") has no transition for input <" + event + ">");
 				System.out.println("\tAll transitions:");
 				for (String key : transitionMap.keySet()) {
 					System.out.println("\t\t" + key);
 				}
+				System.out.flush();
 			}
 			return;
 		}
@@ -257,7 +271,8 @@ public class StateMachine implements EventProcessor {
 	public static interface StateMachineTracker {
 
 		/**
-		 * This method is invoked when the tracked state machine enters a terminal state.
+		 * This method is invoked when the tracked state machine enters a terminal
+		 * state.
 		 * 
 		 * @param machine the state machine being tracked.
 		 * @see #registerCallback(StateMachineTracker)
@@ -281,9 +296,10 @@ public class StateMachine implements EventProcessor {
 	 * {@link TimedEvent} interface, the timeout will be ignored if it is received
 	 * after the targeted state transition has occurred.
 	 * <p>
-	 * See {@link glf.msgxchg.MXStateMachine} for a state machine that uses
-	 * timeouts.
+	 * See {@link com.github.glfrazier.msgxchg.MXStateMachine} for a state machine
+	 * that uses timeouts.
 	 * 
+	 * @see StateMachine#TIMEOUT
 	 * @see StateMachine#getTimeoutEvent()
 	 * @see StateMachine#getTimeoutEvent(String)
 	 * 
@@ -310,7 +326,7 @@ public class StateMachine implements EventProcessor {
 	 */
 	public TimedEvent getTimeoutEvent() {
 
-		final long deadline = transitionCount + 1;
+		final long deadline = transitionCount;
 
 		return new TimedEvent() {
 
@@ -320,7 +336,7 @@ public class StateMachine implements EventProcessor {
 			}
 
 			public String toString() {
-				return "TIMEOUT";
+				return TIMEOUT;
 			}
 
 		};
@@ -354,7 +370,7 @@ public class StateMachine implements EventProcessor {
 
 	@Override
 	public String toString() {
-		return name + "{currentState = " + currentState + "}";
+		return name + "[currentState = (" + currentState + ")]";
 	}
 
 	public void setVerbose(boolean v) {
@@ -363,5 +379,20 @@ public class StateMachine implements EventProcessor {
 
 	public long getTransitionCount() {
 		return transitionCount;
+	}
+
+	public void scheduleTimeout(long timeDeltaMS) {
+		TimedEvent timeout = this.getTimeoutEvent();
+		eventingSystem.scheduleEventRelative(this, timeout, timeDeltaMS);
+	}
+
+	public void scheduleTimeout(String eventName, long timeDeltaMS) {
+		TimedEvent timeout = this.getTimeoutEvent(eventName);
+		eventingSystem.scheduleEventRelative(this, timeout, timeDeltaMS);
+	}
+
+	public void scheduleTimeout(TimedEvent event, long timeDeltaMS) {
+		TimedEvent timeout = this.getTimeoutEvent();
+		eventingSystem.scheduleEventRelative(this, timeout, timeDeltaMS);
 	}
 }
