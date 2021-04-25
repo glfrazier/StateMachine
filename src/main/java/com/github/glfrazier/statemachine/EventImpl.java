@@ -1,6 +1,6 @@
 package com.github.glfrazier.statemachine;
 
-import com.github.glfrazier.Event;
+import com.github.glfrazier.event.Event;
 
 /**
  * A helper class that allows one to easily wrap an object into a StateMachine

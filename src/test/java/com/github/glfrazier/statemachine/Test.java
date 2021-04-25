@@ -1,7 +1,7 @@
 package com.github.glfrazier.statemachine;
 
-import com.github.glfrazier.Event;
-import com.github.glfrazier.EventingSystem;
+import com.github.glfrazier.event.Event;
+import com.github.glfrazier.event.EventingSystem;
 
 /**
  * This test builds a StateMachine and then puts it through its paces. Note that

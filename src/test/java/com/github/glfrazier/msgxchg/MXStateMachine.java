@@ -3,8 +3,8 @@ package com.github.glfrazier.msgxchg;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.github.glfrazier.Event;
-import com.github.glfrazier.EventingSystem;
+import com.github.glfrazier.event.Event;
+import com.github.glfrazier.event.EventingSystem;
 import com.github.glfrazier.msgxchg.Message.Type;
 import com.github.glfrazier.statemachine.EventImpl;
 import com.github.glfrazier.statemachine.State;

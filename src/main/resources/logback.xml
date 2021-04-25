@@ -1,0 +1,41 @@
+<configuration>   
+
+    <TurboFilter class="ch.qos.logback.classic.turbo.MarkerFilter">
+        <Name>TrainingFilter</Name>
+        <Marker>TRAINING</Marker>
+        <OnMatch>DENY</OnMatch>
+    </TurboFilter>
+ 
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>logs/application.log</file>
+        <encoder>
+            <pattern>%date - [%level] - from %logger in %thread
+                %n%message%n%xException%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern> %logger{15} - %message%n%xException{5}
+            </pattern>
+        </encoder>
+        <filters>
+        	<filter name="TrainingFilter"/>
+        </filters>
+    </appender>
+ 
+    <logger name="org.datavec" level="WARN" />
+    <logger name="org.nd4j" level="WARN" />
+    <logger name="com.github.glfrazier" level="INFO" />
+    <logger name="com.github.glfrazier.robot" level="INFO" />
+    <logger name="com.github.glfrazier.robot.WorldImpl" level="DEBUG" />
+
+
+    <logger name="com.github.glfrazier.ahr.trainable.LSTM" level="INFO"></logger>
+    <root level="ERROR">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+    </root>
+	
+
+</configuration>

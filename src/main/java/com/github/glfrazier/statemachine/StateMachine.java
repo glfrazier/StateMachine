@@ -5,9 +5,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.github.glfrazier.Event;
-import com.github.glfrazier.EventProcessor;
-import com.github.glfrazier.EventingSystem;
+import com.github.glfrazier.event.Event;
+import com.github.glfrazier.event.EventProcessor;
+import com.github.glfrazier.event.EventingSystem;
 
 public class StateMachine implements EventProcessor {
 

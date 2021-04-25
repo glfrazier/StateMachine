@@ -1,6 +1,6 @@
 package com.github.glfrazier.statemachine;
 
-import com.github.glfrazier.Event;
+import com.github.glfrazier.event.Event;
 
 /**
  * The state of a state machine.

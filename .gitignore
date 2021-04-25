@@ -4,6 +4,8 @@
 # Eclipse project files
 .classpath
 .project
+# Maven
+.settings
 
 # Log file
 *.log
@@ -28,3 +30,4 @@ hs_err_pid*
 /bin/
 /doc/
 /bin1/
+/target/
