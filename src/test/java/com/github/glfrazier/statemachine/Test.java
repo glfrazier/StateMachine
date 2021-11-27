@@ -35,7 +35,7 @@ public class Test {
 
 	public static void main(String[] args) throws Exception {
 
-		EventingSystem es = new EventingSystem("Test Eventing System");
+		EventingSystem es = new EventingSystem("Test Eventing System", false);
 		StateMachine machine = new StateMachine("Test", es);
 		
 		Event testEvent = new Event() {

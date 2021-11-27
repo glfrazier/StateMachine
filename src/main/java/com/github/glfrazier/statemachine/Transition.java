@@ -28,22 +28,6 @@ public class Transition {
 	protected Event event;
 
 	/**
-	 * Construct a state machine transition, using a String to identify the Event
-	 * that will trigger the transition.
-	 * 
-	 * @param fromState the state that will be transitioned from
-	 * @param event     the String returned by the <code>toString</code> method of
-	 *                  the event that, if received while the machine is in
-	 *                  <code>fromState</code>, will cause this transition to occur
-	 * @param toState   the state the machine will be in after the transition
-	 */
-	public Transition(State fromState, String event, State toState) {
-		this.fromState = fromState;
-		this.event = new EventImpl<String>(event);
-		this.toState = toState;
-	}
-
-	/**
 	 * Construct a state machine transition.
 	 * 
 	 * @param fromState the state that will be transitioned from

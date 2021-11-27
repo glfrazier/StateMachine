@@ -44,10 +44,12 @@ public class MessageExchanger {
 				System.err.println("We are supposed to be listening for requests!");
 				System.exit(-1);
 			}
+			System.out.println(this + " received " + m + " and will respond in 0.25 seconds.");
 			Thread.sleep(250);
 			Message response = new Message(Type.RESPONSE, m.getValue() + 1, this.port);
 			send(response, m.getPort());
 		}
+		System.out.println(this + " has received its three messages and will now cease to listen.");
 	}
 
 	public String toString() {
@@ -81,8 +83,8 @@ public class MessageExchanger {
 
 	public static void main(String args[]) throws InterruptedException {
 		boolean verbose = args.length > 0 && args[0].equals("-v");
-		EventingSystem es = new EventingSystem("Eventing for MX");
-		es.setVerbose(verbose);
+		EventingSystem es = new EventingSystem("Eventing for MX", false);
+		//es.setVerbose(verbose);
 		es.exitOnEmptyQueue(false);
 		MessageExchanger mx1 = new MessageExchanger("mx1");
 		MessageExchanger mx2 = new MessageExchanger("mx2");
@@ -126,9 +128,9 @@ public class MessageExchanger {
 				try {
 					mx2.processStateMachine(machine);
 				} catch (Exception e) {
-					System.out.println("mx2 terminating due to exception " + e);
+					System.out.println(mx2 + " terminating due to exception " + e);
 				}
-				System.out.println("mx2 state machine completed.");
+				System.out.println(mx2 + " completed.");
 			}
 		};
 		t2.start();
@@ -148,7 +150,7 @@ public class MessageExchanger {
 			} catch (Exception e) {
 				return;
 			}
-			// When we receive a message, we wrap it in an event and hand it to the state
+			// When we receive a datagram, we wrap it in an event and hand it to the state
 			// machine for processing.
 			machine.receive(new EventImpl<Message>(m, MXStateMachine.RESPONSE));
 		}

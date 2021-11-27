@@ -10,7 +10,7 @@ package com.github.glfrazier.statemachine;
  * @author Greg Frazier
  *
  */
-public class TimeoutEventImpl<T> implements StateMachine.TimedEvent {
+public class TimeoutEventImpl<T> implements StateMachineOld.TimedEvent {
 
 	private final T payload;
 	private final long deadline;
@@ -21,7 +21,7 @@ public class TimeoutEventImpl<T> implements StateMachine.TimedEvent {
 	 * 
 	 * @param payload  the object whose toString method will identify this event.
 	 * @param deadline the last valid transition for this event
-	 * @see StateMachine#getTransitionCount()
+	 * @see StateMachineOld#getTransitionCount()
 	 */
 	public TimeoutEventImpl(T payload, long deadline) {
 		this.payload = payload;
@@ -36,7 +36,7 @@ public class TimeoutEventImpl<T> implements StateMachine.TimedEvent {
 	 * @param deadline the last valid transition for this event
 	 * @param value    the value returned by <code>toString()</code>. This is the
 	 *                 value by which the state machine knows this event.
-	 * @see StateMachine#getTransitionCount()
+	 * @see StateMachineOld#getTransitionCount()
 	 */
 	public TimeoutEventImpl(T payload, long deadline, String value) {
 		this.payload = payload;

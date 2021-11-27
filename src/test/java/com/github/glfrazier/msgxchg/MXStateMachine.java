@@ -30,7 +30,7 @@ import com.github.glfrazier.statemachine.State.Action;
  */
 public class MXStateMachine extends StateMachine {
 	
-	public static final String RESPONSE = "RESPONSE";
+	public static final Event RESPONSE = new EventImpl<String>("RESPONSE");
 
 	public State makeRequest = new State("MakeRequest", makeRequestAction(), this);
 	public State finished = new State("RequestTimedOut", timeoutAction(), this);
@@ -109,7 +109,7 @@ public class MXStateMachine extends StateMachine {
 				// We also generate a timeout, in case the other side never responds to our
 				// message. Note the use of the state machine getTimeoutEvent method, which
 				// ensures both the correct name for the event and the correct deadline.
-				final StateMachine.TimedEvent timeout = s.getMachine().getTimeoutEvent();
+				final Event timeout = s.getMachine().getTimeoutEvent();
 				TimerTask tt = new TimerTask() {
 
 					@Override

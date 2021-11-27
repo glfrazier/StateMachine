@@ -1,35 +1,20 @@
 # StateMachine
 
-A State Machine (Mealy) builder and execution engine.
+A State Machine builder and execution engine.
 
-A Mealy state machine is one whose outputs depend on the current state and the inputs.
-So, each state transition is a 4-tuple: (current state, input, output, next state).
-Note that it is possible to have a state transition that occurs without an input--<null> is a
-valid input specification for a Transition.
+StateMachine is an implementation of the Moore state machine model.
+The outputs of a Moore state machine depend only on the state that is being entered.
+(As opposed to a Mealy state machine, whose outputs depend on the current state and the input.)
 
-* The states are instances of the State class.
-* The inputs to the State Machine are objects that implement StateMachine.Event, a tagging class.
-There is an implementation of Event, EventImpl, that takes a String name as an argument to its
-constructor and uses the name for hashCode and equals.
-* The State Machine outputs are invocations of the `act(Transition)` method on an object
-that implements the StateMachine.Action interface. `null` is a legal value for the output of
-a Transition--no output is generated.
+* To implement the Moore model, each State has an optional State.Action that is invoked when the State is entered.
 
-Thus, when one specifies the transition
-```
-(State1, INPUT_A, OUTPUT_B, State2)
-```
-One is saying that, when `State1` is the state machine's current state,
-if an Event `input` is received that equals `INPUT_A`, then `OUTPUT_B.act(transition)` is
-invoked and the current state is set to `State2`. Note that `act` is passed the entire Transition;
-further, it is the 4-tuple whose input-field is the Event instance that instigated the transition,
-not the instance that was used to define the Transition when building the state machine.
+* Each State transition is defined by the 3-tuple (Current-State, Input, Next-State), implemented by the Transition class.
+It is possible to have a state transition that occurs without an input. If a state machine has the 
+Transition (S1, null, S2), when state S1 is entered, 
+the State.Action associated with S1 is invoked and then the machine immediately transitions to S2.
 
-If the specification is
-```
-(State1, null, OUTPUT_B, State2)
-```
-then when the state machine's current state is set to `State1`, then `OUTPUT_B` is immediately invoked
-and the state machine immediately transitions to `State2`.
+* One can define a stochastic state machine via StochasticTransition objects. Where the regular (deterministic) Transition specifies 
+a single next state for a given (state, input) pair, a StochasticTransition specifies an array of next states with a corresponding array
+of probabilities.
 
-There is a simple example of building and running a StateMachine in the test/ folder.
+There are examples of building and using state machines the test folder.

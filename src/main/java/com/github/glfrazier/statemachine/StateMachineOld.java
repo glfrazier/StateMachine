@@ -9,7 +9,7 @@ import com.github.glfrazier.event.Event;
 import com.github.glfrazier.event.EventProcessor;
 import com.github.glfrazier.event.EventingSystem;
 
-public class StateMachine implements EventProcessor {
+public class StateMachineOld implements EventProcessor {
 
 	/**
 	 * If this String (or an Event whose <code>toString()</code> method returns this
@@ -60,7 +60,7 @@ public class StateMachine implements EventProcessor {
 	 *                    the set of states is infered from the transitions.
 	 * @param startState  the initial state of the machine
 	 */
-	public StateMachine(String name, EventingSystem es, Set<Transition> transitions, State startState) {
+	public StateMachineOld(String name, EventingSystem es, Set<Transition> transitions, State startState) {
 		this(name, es, startState);
 		for (Transition t : transitions) {
 			addTransition(t);
@@ -75,12 +75,12 @@ public class StateMachine implements EventProcessor {
 	 * @param name       the name of the state machine
 	 * @param startState the initial state of the machine
 	 */
-	public StateMachine(String name, EventingSystem es, State startState) {
+	public StateMachineOld(String name, EventingSystem es, State startState) {
 		this(name, es);
 		this.startState = startState;
 	}
 
-	public StateMachine(String name, EventingSystem es) {
+	public StateMachineOld(String name, EventingSystem es) {
 		this.name = name;
 		this.eventingSystem = es;
 		states = new HashSet<State>();
@@ -277,7 +277,7 @@ public class StateMachine implements EventProcessor {
 		 * @param machine the state machine being tracked.
 		 * @see #registerCallback(StateMachineTracker)
 		 */
-		public void stateMachineEnded(StateMachine machine);
+		public void stateMachineEnded(StateMachineOld machine);
 	}
 
 	/**
@@ -299,9 +299,9 @@ public class StateMachine implements EventProcessor {
 	 * See {@link com.github.glfrazier.msgxchg.MXStateMachine} for a state machine
 	 * that uses timeouts.
 	 * 
-	 * @see StateMachine#TIMEOUT
-	 * @see StateMachine#getTimeoutEvent()
-	 * @see StateMachine#getTimeoutEvent(String)
+	 * @see StateMachineOld#TIMEOUT
+	 * @see StateMachineOld#getTimeoutEvent()
+	 * @see StateMachineOld#getTimeoutEvent(String)
 	 * 
 	 * @author Greg Frazier
 	 *
