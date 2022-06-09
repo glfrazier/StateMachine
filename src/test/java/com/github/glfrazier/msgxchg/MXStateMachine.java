@@ -53,7 +53,7 @@ public class MXStateMachine extends StateMachine {
 	 *                  sending/receiving messages to/from.
 	 */
 	public MXStateMachine(MessageExchanger mx, EventingSystem es, int otherPort) {
-		super("MXStateMachine", es);
+		super("MXStateMachine", EventEqualityMode.EQUALS, es);
 		this.mx = mx;
 		this.otherPort = otherPort;
 

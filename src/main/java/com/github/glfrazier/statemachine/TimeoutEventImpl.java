@@ -10,7 +10,7 @@ package com.github.glfrazier.statemachine;
  * @author Greg Frazier
  *
  */
-public class TimeoutEventImpl<T> implements StateMachineOld.TimedEvent {
+public class TimeoutEventImpl<T> implements StateMachine.TimedEvent {
 
 	private final T payload;
 	private final long deadline;

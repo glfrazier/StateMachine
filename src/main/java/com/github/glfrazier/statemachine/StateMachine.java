@@ -12,6 +12,28 @@ import com.github.glfrazier.event.EventingSystem;
 public class StateMachine implements EventProcessor {
 
 	/**
+	 * The mode by which the state machine compares an {@link Event} it receives
+	 * (see {@link #process(Event, EventingSystem)} and {@link #receive(Event)}) to
+	 * the events specified in the state {@link Transition}s.
+	 * 
+	 * Note that, if one constructs events as static constants of anonymous classes,
+	 * and uses those events throughout the state machine, then all the three modes
+	 * will work.
+	 */
+	public static enum EventEqualityMode {
+		/**
+		 * Transition.event.equals(event). If you do not override equals(Object) in you
+		 * event class, this is the Object.equals(Object) method, which is equivalent to
+		 * "==".
+		 */
+		EQUALS,
+		/** Transition.event.toString().equals(event.toString()) */
+		STRING_EQUALS,
+		/** Transition.event.getClass().equals(event.getClass()) */
+		CLASS_EQUALS
+	};
+
+	/**
 	 * If this String (or an Event whose <code>toString()</code> method returns this
 	 * String) is used in a transition from a given state S, then when an Event is
 	 * received while the StateMachine is in S, and there are no transitions whose
@@ -33,7 +55,7 @@ public class StateMachine implements EventProcessor {
 
 	private Set<State> states;
 
-	private Map<State, Map<Event, Transition>> stateTransitionMap;
+	private Map<State, Map<Object, Transition>> stateTransitionMap;
 
 	protected State currentState;
 
@@ -52,6 +74,8 @@ public class StateMachine implements EventProcessor {
 
 	protected EventingSystem eventingSystem;
 
+	private final EventEqualityMode eventEqualityMode;
+
 	/**
 	 * Construct a StateMachine that has the specified name, transitions, and
 	 * initial state.
@@ -61,8 +85,9 @@ public class StateMachine implements EventProcessor {
 	 *                    the set of states is infered from the transitions.
 	 * @param startState  the initial state of the machine
 	 */
-	public StateMachine(String name, EventingSystem es, Set<Transition> transitions, State startState) {
-		this(name, es, startState);
+	public StateMachine(String name, EventEqualityMode mode, EventingSystem es, Set<Transition> transitions,
+			State startState) {
+		this(name, mode, es, startState);
 		for (Transition t : transitions) {
 			addTransition(t);
 		}
@@ -76,20 +101,21 @@ public class StateMachine implements EventProcessor {
 	 * @param name       the name of the state machine
 	 * @param startState the initial state of the machine
 	 */
-	public StateMachine(String name, EventingSystem es, State startState) {
-		this(name, es);
+	public StateMachine(String name, EventEqualityMode mode, EventingSystem es, State startState) {
+		this(name, mode, es);
 		this.startState = startState;
 	}
 
-	public StateMachine(String name, EventingSystem es) {
+	public StateMachine(String name, EventEqualityMode mode, EventingSystem es) {
 		this.name = name;
+		this.eventEqualityMode = mode;
 		this.eventingSystem = es;
 		states = new HashSet<State>();
-		stateTransitionMap = new HashMap<State, Map<Event, Transition>>();
+		stateTransitionMap = new HashMap<>();
 	}
-	
-	public StateMachine(String name) {
-		this(name, null);
+
+	public StateMachine(String name, EventEqualityMode mode) {
+		this(name, mode, null);
 	}
 
 	/**
@@ -112,9 +138,9 @@ public class StateMachine implements EventProcessor {
 	public void addTransition(Transition t) {
 		State fromState = t.getFromState();
 		states.add(fromState);
-		Map<Event, Transition> transitionMap = stateTransitionMap.get(fromState);
+		Map<Object, Transition> transitionMap = stateTransitionMap.get(fromState);
 		if (transitionMap == null) {
-			transitionMap = new HashMap<Event, Transition>();
+			transitionMap = new HashMap<>();
 			stateTransitionMap.put(t.getFromState(), transitionMap);
 		}
 		if (t.getEvent() == null) {
@@ -128,7 +154,17 @@ public class StateMachine implements EventProcessor {
 						+ " when there is already a null-transition defined from that state.");
 			}
 		}
-		transitionMap.put(t.getEvent(), t);
+		switch (eventEqualityMode) {
+		case EQUALS:
+			transitionMap.put(t.getEvent(), t);
+			break;
+		case STRING_EQUALS:
+			transitionMap.put(t.getEvent().toString(), t);
+			break;
+		case CLASS_EQUALS:
+			transitionMap.put(t.getEvent().getClass(), t);
+			break;
+		}
 	}
 
 	/**
@@ -162,7 +198,7 @@ public class StateMachine implements EventProcessor {
 		if (action != null) {
 			action.act(currentState, e);
 		}
-		Map<Event, Transition> transitionMap = stateTransitionMap.get(currentState);
+		Map<Object, Transition> transitionMap = stateTransitionMap.get(currentState);
 		if (transitionMap == null || transitionMap.isEmpty()) {
 			// The state machine is in a terminal state
 			for (StateMachineTracker tracker : callbacks) {
@@ -208,7 +244,6 @@ public class StateMachine implements EventProcessor {
 	 *              and the StateMachine will enter the next state.
 	 */
 	public void receive(Event event) {
-		// eventingSystem.scheduleEvent(this, event);
 		process(event, null);
 	}
 
@@ -233,7 +268,7 @@ public class StateMachine implements EventProcessor {
 				return;
 			}
 		}
-		Map<Event, Transition> transitionMap = stateTransitionMap.get(currentState);
+		Map<Object, Transition> transitionMap = stateTransitionMap.get(currentState);
 		if (transitionMap == null) {
 			// The state machine is in a terminal state
 			if (verbose) {
@@ -242,7 +277,18 @@ public class StateMachine implements EventProcessor {
 			}
 			return;
 		}
-		Transition t = transitionMap.get(event);
+		Transition t = null;
+		switch (eventEqualityMode) {
+		case EQUALS:
+			t = transitionMap.get(event);
+			break;
+		case STRING_EQUALS:
+			t = transitionMap.get(event.toString());
+			break;
+		case CLASS_EQUALS:
+			t = transitionMap.get(event.getClass());
+			break;
+		}
 		if (t == null) {
 			t = transitionMap.get(WILDCARD_EVENT);
 			if (verbose && t != null) {
@@ -256,7 +302,7 @@ public class StateMachine implements EventProcessor {
 				System.out.println("(" + currentState + ") has no transition for input " + event + " (class "
 						+ event.getClass() + ").");
 				System.out.println("\tAll transitions:");
-				for (Event key : transitionMap.keySet()) {
+				for (Object key : transitionMap.keySet()) {
 					System.out.println("\t\t" + key + " (" + key.getClass() + ")");
 				}
 				System.out.flush();
@@ -331,7 +377,7 @@ public class StateMachine implements EventProcessor {
 	 * @return a timeout event named "TIMEOUT".
 	 * @see #getTimeoutEvent(String)
 	 */
-	public Event getTimeoutEvent() {
+	public TimedEvent getTimeoutEvent() {
 		return getTimeoutEvent("TIMEOUT");
 	}
 
@@ -343,7 +389,7 @@ public class StateMachine implements EventProcessor {
 	 * @return a timeout event with the specified name.
 	 * @see #getTimeoutEvent()
 	 */
-	public Event getTimeoutEvent(String n) {
+	public TimedEvent getTimeoutEvent(String n) {
 
 		final String name = n;
 

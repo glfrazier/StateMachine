@@ -2,6 +2,7 @@ package com.github.glfrazier.statemachine;
 
 import com.github.glfrazier.event.Event;
 import com.github.glfrazier.event.EventingSystem;
+import com.github.glfrazier.statemachine.StateMachine.EventEqualityMode;
 
 /**
  * This test builds a StateMachine and then puts it through its paces. Note that
@@ -36,7 +37,7 @@ public class Test {
 	public static void main(String[] args) throws Exception {
 
 		EventingSystem es = new EventingSystem("Test Eventing System", false);
-		StateMachine machine = new StateMachine("Test", es);
+		StateMachine machine = new StateMachine("Test", EventEqualityMode.EQUALS, es);
 		
 		Event testEvent = new Event() {
 			public String toString() {
