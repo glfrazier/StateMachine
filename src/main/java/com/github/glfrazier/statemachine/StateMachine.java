@@ -34,15 +34,42 @@ public class StateMachine implements EventProcessor {
 	};
 
 	/**
-	 * If this String (or an Event whose <code>toString()</code> method returns this
-	 * String) is used in a transition from a given state S, then when an Event is
-	 * received while the StateMachine is in S, and there are no transitions whose
-	 * Event matches the input, then the WILDCARD transition is invoked. If one
-	 * thinks of using a switch statement over the received event to select the
-	 * transition from a state, the WILDCARD event is the "default:" block for that
-	 * switch statement.
+	 * If this event (or its name or its class) is the trigger in a transition from
+	 * a given state S, then when an Event is received while the StateMachine is in
+	 * S, and there are no transitions whose Event matches the input, then the
+	 * WILDCARD transition is invoked. If one thinks of using a switch statement to
+	 * select the transition from a state, the transition triggered by the WILDCARD
+	 * is the "default:" block for that switch statement.
 	 */
-	public static final Event WILDCARD_EVENT = new EventImpl("*");
+	public static final Event WILDCARD_EVENT = new Event() {
+		public static final String NAME = "*";
+
+		public String toString() {
+			return NAME;
+		}
+	};
+
+	/**
+	 * A useful event.
+	 */
+	public static final Event SUCCESS_EVENT = new Event() {
+		public static final String NAME = "success";
+
+		public String toString() {
+			return NAME;
+		}
+	};
+
+	/**
+	 * A useful event.
+	 */
+	public static final Event FAILURE_EVENT = new Event() {
+		public static final String NAME = "failure";
+
+		public String toString() {
+			return NAME;
+		}
+	};
 
 	/**
 	 * The default event name for timeout events.
@@ -55,7 +82,7 @@ public class StateMachine implements EventProcessor {
 
 	private Set<State> states;
 
-	private Map<State, Map<Object, Transition>> stateTransitionMap;
+	private Map<State, Map<Object, State>> stateTransitionMap;
 
 	protected State currentState;
 
@@ -114,10 +141,6 @@ public class StateMachine implements EventProcessor {
 		stateTransitionMap = new HashMap<>();
 	}
 
-	public StateMachine(String name, EventEqualityMode mode) {
-		this(name, mode, null);
-	}
-
 	/**
 	 * If the state machine was created w/out a specified start state, it can be
 	 * specified (or changed) by this method. Will have no effect if the state
@@ -136,14 +159,19 @@ public class StateMachine implements EventProcessor {
 	 * @param t a transition from one state to another
 	 */
 	public void addTransition(Transition t) {
+		if (t.getTriggerType() != eventEqualityMode && t.getTriggerType() != null) {
+			throw new IllegalArgumentException("Attempted to add transition " + t + " with trigger type "
+					+ t.getTriggerType() + " to state machine of mode " + eventEqualityMode + ".");
+		}
 		State fromState = t.getFromState();
 		states.add(fromState);
-		Map<Object, Transition> transitionMap = stateTransitionMap.get(fromState);
+		Map<Object, State> transitionMap = stateTransitionMap.get(fromState);
 		if (transitionMap == null) {
 			transitionMap = new HashMap<>();
 			stateTransitionMap.put(t.getFromState(), transitionMap);
 		}
-		if (t.getEvent() == null) {
+		Object trigger = t.getTrigger();
+		if (trigger == null) {
 			if (!transitionMap.isEmpty()) {
 				throw new IllegalArgumentException("Defining a null-input-transition from state " + fromState
 						+ " when there are other transitions from that state.");
@@ -154,17 +182,7 @@ public class StateMachine implements EventProcessor {
 						+ " when there is already a null-transition defined from that state.");
 			}
 		}
-		switch (eventEqualityMode) {
-		case EQUALS:
-			transitionMap.put(t.getEvent(), t);
-			break;
-		case STRING_EQUALS:
-			transitionMap.put(t.getEvent().toString(), t);
-			break;
-		case CLASS_EQUALS:
-			transitionMap.put(t.getEvent().getClass(), t);
-			break;
-		}
+		transitionMap.put(trigger, t.getToState());
 	}
 
 	/**
@@ -196,9 +214,9 @@ public class StateMachine implements EventProcessor {
 		currentState = state;
 		State.Action action = currentState.getAction();
 		if (action != null) {
-			action.act(currentState, e);
+			action.act(this, currentState, e);
 		}
-		Map<Object, Transition> transitionMap = stateTransitionMap.get(currentState);
+		Map<Object, State> transitionMap = stateTransitionMap.get(currentState);
 		if (transitionMap == null || transitionMap.isEmpty()) {
 			// The state machine is in a terminal state
 			for (StateMachineTracker tracker : callbacks) {
@@ -208,17 +226,17 @@ public class StateMachine implements EventProcessor {
 		}
 		// Check for a null-transition (a transition that does not require an event
 		// to trigger it).
-		Transition t = transitionMap.get(null);
-		if (t == null) {
+		State toState = transitionMap.get(null);
+		if (toState == null) {
 			// There will be no further activity until an input is received
 			return;
 		}
 		if (verbose) {
-			System.out.println("*" + currentState + ") has a null transition " + t);
+			System.out.println("*" + currentState + ") has a null transition to " + toState);
 			System.out.flush();
 		}
 		// This state has a null-transition.
-		performTransition(t, null);
+		performTransition(toState, null);
 	}
 
 	/**
@@ -227,11 +245,11 @@ public class StateMachine implements EventProcessor {
 	 * incremented <emph>after</emph> the action is invoked and before the state is
 	 * entered.
 	 * 
-	 * @param t
+	 * @param toState
 	 */
-	private void performTransition(Transition t, Event e) {
+	private void performTransition(State toState, Event e) {
 		transitionCount++;
-		enterState(t.getToState(), e);
+		enterState(toState, e);
 	}
 
 	/**
@@ -244,7 +262,7 @@ public class StateMachine implements EventProcessor {
 	 *              and the StateMachine will enter the next state.
 	 */
 	public void receive(Event event) {
-		process(event, null);
+		eventingSystem.scheduleEvent(this, event);
 	}
 
 	public void process(Event event, EventingSystem es) {
@@ -268,7 +286,7 @@ public class StateMachine implements EventProcessor {
 				return;
 			}
 		}
-		Map<Object, Transition> transitionMap = stateTransitionMap.get(currentState);
+		Map<Object, State> transitionMap = stateTransitionMap.get(currentState);
 		if (transitionMap == null) {
 			// The state machine is in a terminal state
 			if (verbose) {
@@ -277,26 +295,26 @@ public class StateMachine implements EventProcessor {
 			}
 			return;
 		}
-		Transition t = null;
+		State toState = null;
 		switch (eventEqualityMode) {
 		case EQUALS:
-			t = transitionMap.get(event);
+			toState = transitionMap.get(event);
 			break;
 		case STRING_EQUALS:
-			t = transitionMap.get(event.toString());
+			toState = transitionMap.get(event.toString());
 			break;
 		case CLASS_EQUALS:
-			t = transitionMap.get(event.getClass());
+			toState = transitionMap.get(event.getClass());
 			break;
 		}
-		if (t == null) {
-			t = transitionMap.get(WILDCARD_EVENT);
-			if (verbose && t != null) {
+		if (toState == null) {
+			toState = transitionMap.get(WILDCARD_EVENT);
+			if (verbose && toState != null) {
 				System.out.println(
 						"(" + currentState + ") is invoking the WILDCARD transition for input <" + event + ">");
 			}
 		}
-		if (t == null) {
+		if (toState == null) {
 			// There is no transition defined for the input in the current state
 			if (verbose) {
 				System.out.println("(" + currentState + ") has no transition for input " + event + " (class "
@@ -309,7 +327,7 @@ public class StateMachine implements EventProcessor {
 			}
 			return;
 		}
-		performTransition(t, event);
+		performTransition(toState, event);
 	}
 
 	public void registerCallback(StateMachineTracker callback) {

@@ -48,7 +48,7 @@ public class Test {
 		State.Action action = new State.Action() {
 
 			@Override
-			public void act(State s, Event e) {
+			public void act(StateMachine sm, State s, Event e) {
 				StateWithCount swt = (StateWithCount) s;
 				if (swt.count == 4) {
 					System.out.println("Done!");
@@ -64,7 +64,7 @@ public class Test {
 		State.Action noEventAction = new State.Action() {
 
 			@Override
-			public void act(State s, Event e) {
+			public void act(StateMachine sm, State s, Event e) {
 				StateWithCount swt = (StateWithCount) s;
 				if (swt.count == 4) {
 					System.out.println("Done!");

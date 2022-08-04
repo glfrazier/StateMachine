@@ -108,11 +108,12 @@ public class State {
 		 * Perform the action associated with the State. Since the state is passes as a
 		 * parameter, one can use the same <code>Action</code> in multiple states.
 		 * 
+		 * @param sm The state machine being processed
 		 * @param s The state that was entered
 		 * @param e The event that caused the transition to this state
 		 * 
 		 */
-		public void act(State s, Event e);
+		public void act(StateMachine sm, State s, Event e);
 	}
 
 }

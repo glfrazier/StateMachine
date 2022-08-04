@@ -1,6 +1,7 @@
 package com.github.glfrazier.statemachine;
 
 import com.github.glfrazier.event.Event;
+import com.github.glfrazier.statemachine.StateMachine.EventEqualityMode;
 
 /**
  * A transition from one state to another in a Moore state machine. This is the
@@ -25,7 +26,9 @@ public class Transition {
 	 * The event that triggers the transition. It may be <code>null</code>, in which
 	 * case any other transition from the <code>fromState</code> will be ignored.
 	 */
-	protected Event event;
+	protected Object trigger;
+
+	private EventEqualityMode type;
 
 	/**
 	 * Construct a state machine transition.
@@ -37,8 +40,48 @@ public class Transition {
 	 */
 	public Transition(State fromState, Event event, State toState) {
 		this.fromState = fromState;
-		this.event = event;
+		this.trigger = event;
 		this.toState = toState;
+		if (trigger == null)
+			this.type = null;
+		else
+			this.type = EventEqualityMode.EQUALS;
+	}
+
+	/**
+	 * Construct a state machine transition.
+	 * 
+	 * @param fromState the state that will be transitioned from
+	 * @param event     the event that, if received while the machine is in
+	 *                  <code>fromState</code>, will cause this transition to occur
+	 * @param toState   the state the machine will be in after the transition
+	 */
+	public Transition(State fromState, Class<? extends Event> eventClass, State toState) {
+		this.fromState = fromState;
+		this.trigger = eventClass;
+		this.toState = toState;
+		if (trigger == null)
+			this.type = null;
+		else
+			this.type = EventEqualityMode.CLASS_EQUALS;
+	}
+
+	/**
+	 * Construct a state machine transition.
+	 * 
+	 * @param fromState the state that will be transitioned from
+	 * @param event     the event that, if received while the machine is in
+	 *                  <code>fromState</code>, will cause this transition to occur
+	 * @param toState   the state the machine will be in after the transition
+	 */
+	public Transition(State fromState, String eventString, State toState) {
+		this.fromState = fromState;
+		this.trigger = eventString;
+		this.toState = toState;
+		if (trigger == null)
+			this.type = null;
+		else
+			this.type = EventEqualityMode.STRING_EQUALS;
 	}
 
 	/**
@@ -53,8 +96,9 @@ public class Transition {
 	 */
 	public Transition(State fromState, State toState) {
 		this.fromState = fromState;
-		this.event = null;
+		this.trigger = null;
 		this.toState = toState;
+		this.type = null;
 	}
 
 	/**
@@ -75,13 +119,17 @@ public class Transition {
 		return toState;
 	}
 
-	public Event getEvent() {
-		return event;
+	public Object getTrigger() {
+		return trigger;
 	}
 
 	@Override
 	public String toString() {
-		return fromState + "(" + event + ") => " + toState;
+		return fromState + "(" + trigger + ") => " + toState;
+	}
+
+	public EventEqualityMode getTriggerType() {
+		return type;
 	}
 
 }

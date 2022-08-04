@@ -85,7 +85,7 @@ public class MXStateMachine extends StateMachine {
 		return new Action() {
 
 			@Override
-			public void act(State s, Event event) {
+			public void act(StateMachine sm, State s, Event event) {
 				// The event that triggers this transition will have the received message as its
 				// payload. Get the payload.
 				// Unless this is the transition from the initial state, in which case the event
@@ -132,7 +132,7 @@ public class MXStateMachine extends StateMachine {
 		return new Action() {
 
 			@Override
-			public void act(State s, Event e) {
+			public void act(StateMachine sm, State s, Event e) {
 				System.out.println(mx + " timed out waiting for a response.");
 				// We are transitioning from PROCESS_REQUEST to TIMEOUT, because we did not
 				// receive a response to a request before the timeout expired. The thread that

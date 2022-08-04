@@ -15,7 +15,7 @@ public class StochasticDemo {
 	static State.Action action = new State.Action() {
 
 		@Override
-		public void act(State s, Event e) {
+		public void act(StateMachine sm, State s, Event e) {
 			System.out.println("\tEntered " + s + " in response to " + e);
 		}
 
