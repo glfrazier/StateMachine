@@ -274,16 +274,20 @@ public class StateMachine implements EventProcessor {
 			enterState(startState, null);
 		}
 		if (verbose) {
-			System.out.println(this + " received input <" + event + ">");
+			System.out.println(this + " received input <" + event + "> of class <" + event.getClass() + ">");
 		}
 		if (event instanceof TimedEvent) {
 			TimedEvent te = (TimedEvent) event;
-			if (transitionCount > te.getTransitionDeadline()) {
+			if (transitionCount >= te.getTransitionDeadline()) {
 				if (verbose) {
 					System.out.println("<" + event + "> ignored because its deadline has expired.");
 					System.out.flush();
 				}
 				return;
+			} else {
+				if (verbose) {
+					System.out.println("<" + event + "> will be processed. transitionCount=" + transitionCount + ", deadline=" + te.getTransitionDeadline());
+				}
 			}
 		}
 		Map<Object, State> transitionMap = stateTransitionMap.get(currentState);
@@ -308,7 +312,9 @@ public class StateMachine implements EventProcessor {
 			break;
 		}
 		if (toState == null) {
-			toState = transitionMap.get(WILDCARD_EVENT);
+			toState = (eventEqualityMode == EventEqualityMode.CLASS_EQUALS
+					? transitionMap.get(WILDCARD_EVENT.getClass())
+					: transitionMap.get(WILDCARD_EVENT));
 			if (verbose && toState != null) {
 				System.out.println(
 						"(" + currentState + ") is invoking the WILDCARD transition for input <" + event + ">");
@@ -396,7 +402,7 @@ public class StateMachine implements EventProcessor {
 	 * @see #getTimeoutEvent(String)
 	 */
 	public TimedEvent getTimeoutEvent() {
-		return getTimeoutEvent("TIMEOUT");
+		return getTimeoutEvent(TIMEOUT);
 	}
 
 	/**
@@ -408,37 +414,8 @@ public class StateMachine implements EventProcessor {
 	 * @see #getTimeoutEvent()
 	 */
 	public TimedEvent getTimeoutEvent(String n) {
-
-		final String name = n;
-
 		final long deadline = transitionCount + 1;
-
-		return new TimedEvent() {
-
-			@Override
-			public long getTransitionDeadline() {
-				return deadline;
-			}
-
-			public int hashCode() {
-				return name.hashCode();
-			}
-
-			public boolean equals(Object o) {
-				if (o == null) {
-					return false;
-				}
-				if (!(o instanceof Event)) {
-					return false;
-				}
-				return name.equals(o.toString());
-			}
-
-			public String toString() {
-				return name;
-			}
-
-		};
+		return new TimeoutEventImpl<String>(n, deadline);
 	}
 
 	@Override
@@ -459,7 +436,7 @@ public class StateMachine implements EventProcessor {
 			throw new UnsupportedOperationException(
 					"Timeouts can only be scheduled in state machines that are constructed with event systems.");
 		}
-		Event timeout = this.getTimeoutEvent();
+		TimedEvent timeout = this.getTimeoutEvent();
 		eventingSystem.scheduleEventRelative(this, timeout, timeDeltaMS);
 	}
 
@@ -468,7 +445,7 @@ public class StateMachine implements EventProcessor {
 			throw new UnsupportedOperationException(
 					"Timeouts can only be scheduled in state machines that are constructed with event systems.");
 		}
-		Event timeout = this.getTimeoutEvent(eventName);
+		TimedEvent timeout = this.getTimeoutEvent(eventName);
 		eventingSystem.scheduleEventRelative(this, timeout, timeDeltaMS);
 	}
 
