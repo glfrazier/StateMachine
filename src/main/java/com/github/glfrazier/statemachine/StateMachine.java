@@ -1,5 +1,6 @@
 package com.github.glfrazier.statemachine;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -82,7 +83,7 @@ public class StateMachine implements EventProcessor {
 
 	private Set<State> states;
 
-	private Map<State, Map<Object, State>> stateTransitionMap;
+	private Map<State, Map<Object, Transition>> stateTransitionMap;
 
 	protected State currentState;
 
@@ -97,7 +98,8 @@ public class StateMachine implements EventProcessor {
 
 	protected boolean verbose;
 
-	private Set<StateMachineTracker> callbacks = new HashSet<>();
+	private Set<StateMachineTracker> callbacks = Collections.synchronizedSet(new HashSet<>());
+	private boolean callbacksInvoked;
 
 	protected EventingSystem eventingSystem;
 
@@ -165,7 +167,7 @@ public class StateMachine implements EventProcessor {
 		}
 		State fromState = t.getFromState();
 		states.add(fromState);
-		Map<Object, State> transitionMap = stateTransitionMap.get(fromState);
+		Map<Object, Transition> transitionMap = stateTransitionMap.get(fromState);
 		if (transitionMap == null) {
 			transitionMap = new HashMap<>();
 			stateTransitionMap.put(t.getFromState(), transitionMap);
@@ -182,7 +184,7 @@ public class StateMachine implements EventProcessor {
 						+ " when there is already a null-transition defined from that state.");
 			}
 		}
-		transitionMap.put(trigger, t.getToState());
+		transitionMap.put(trigger, t);
 	}
 
 	/**
@@ -202,8 +204,10 @@ public class StateMachine implements EventProcessor {
 	 * 
 	 * @see #receive(Event)
 	 */
-	public void begin() {
-		enterState(startState, null);
+	public synchronized void begin() {
+		if (currentState == null) {
+			enterState(startState, null);
+		}
 	}
 
 	private void enterState(State state, Event e) {
@@ -211,30 +215,39 @@ public class StateMachine implements EventProcessor {
 			System.out.println(this + " is entering state (" + state + ")");
 			System.out.flush();
 		}
+		State oldCurrentState = currentState;
 		currentState = state;
 		State.Action action = currentState.getAction();
 		if (action != null) {
 			action.act(this, currentState, e);
 		}
-		Map<Object, State> transitionMap = stateTransitionMap.get(currentState);
+		Map<Object, Transition> transitionMap = stateTransitionMap.get(currentState);
 		if (transitionMap == null || transitionMap.isEmpty()) {
 			// The state machine is in a terminal state
-			for (StateMachineTracker tracker : callbacks) {
-				tracker.stateMachineEnded(this);
+			synchronized (callbacks) {
+				if (callbacksInvoked) {
+					new Exception("Callbacks invoked a 2nd time! oldCurrentState=" + oldCurrentState + ", currentState="
+							+ currentState + ", e=" + e).printStackTrace();
+				}
+				for (StateMachineTracker tracker : callbacks) {
+					tracker.stateMachineEnded(this);
+				}
+				callbacksInvoked = true;
 			}
 			return;
 		}
 		// Check for a null-transition (a transition that does not require an event
 		// to trigger it).
-		State toState = transitionMap.get(null);
-		if (toState == null) {
+		Transition transition = transitionMap.get(null);
+		if (transition == null) {
 			// There will be no further activity until an input is received
 			return;
 		}
 		if (verbose) {
-			System.out.println("*" + currentState + ") has a null transition to " + toState);
+			System.out.println("*" + currentState + ") has a null transition " + transition);
 			System.out.flush();
 		}
+		State toState = transition.getToState();
 		// This state has a null-transition.
 		performTransition(toState, null);
 	}
@@ -265,7 +278,7 @@ public class StateMachine implements EventProcessor {
 		eventingSystem.scheduleEvent(this, event);
 	}
 
-	public void process(Event event, EventingSystem es) {
+	public synchronized void process(Event event, EventingSystem es, long time) {
 		if (currentState == null) {
 			if (verbose) {
 				System.out.println(this + " will enter its start state before processing inputs.");
@@ -286,12 +299,13 @@ public class StateMachine implements EventProcessor {
 				return;
 			} else {
 				if (verbose) {
-					System.out.println("<" + event + "> will be processed. transitionCount=" + transitionCount + ", deadline=" + te.getTransitionDeadline());
+					System.out.println("<" + event + "> will be processed. transitionCount=" + transitionCount
+							+ ", deadline=" + te.getTransitionDeadline());
 				}
 			}
 		}
-		Map<Object, State> transitionMap = stateTransitionMap.get(currentState);
-		if (transitionMap == null) {
+		Map<Object, Transition> transitionMap = stateTransitionMap.get(currentState);
+		if (transitionMap == null || transitionMap.isEmpty()) {
 			// The state machine is in a terminal state
 			if (verbose) {
 				System.out.println("(" + currentState + ") is a terminal state.");
@@ -299,22 +313,27 @@ public class StateMachine implements EventProcessor {
 			}
 			return;
 		}
+		Transition t = null;
 		State toState = null;
 		switch (eventEqualityMode) {
 		case EQUALS:
-			toState = transitionMap.get(event);
+			t = transitionMap.get(event);
+			toState = (t == null ? null : t.getToState());
 			break;
 		case STRING_EQUALS:
-			toState = transitionMap.get(event.toString());
+			t = transitionMap.get(event.toString());
+			toState = (t == null ? null : t.getToState());
 			break;
 		case CLASS_EQUALS:
-			toState = transitionMap.get(event.getClass());
+			t = transitionMap.get(event.getClass());
+			toState = (t == null ? null : t.getToState());
 			break;
 		}
 		if (toState == null) {
-			toState = (eventEqualityMode == EventEqualityMode.CLASS_EQUALS
+			t = (eventEqualityMode == EventEqualityMode.CLASS_EQUALS
 					? transitionMap.get(WILDCARD_EVENT.getClass())
 					: transitionMap.get(WILDCARD_EVENT));
+			toState = (t == null ? null : t.getToState());
 			if (verbose && toState != null) {
 				System.out.println(
 						"(" + currentState + ") is invoking the WILDCARD transition for input <" + event + ">");
@@ -332,6 +351,9 @@ public class StateMachine implements EventProcessor {
 				System.out.flush();
 			}
 			return;
+		}
+		if (verbose) {
+			System.out.println(this + " transitioning to " + toState + " in response to event <" + event + ">.");
 		}
 		performTransition(toState, event);
 	}
